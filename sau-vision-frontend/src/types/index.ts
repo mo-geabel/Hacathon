@@ -6,7 +6,10 @@ export interface Room {
   status: 'available' | 'occupied' | 'maintenance';
   occupancyPercent: number;
   location: string;
+  lat?: number;
+  lng?: number;
 }
+
 
 export interface Booking {
   id: string;
