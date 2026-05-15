@@ -15,6 +15,9 @@ export interface Booking {
   id: string;
   roomId: string;
   studentId: string;
+  studentName?: string;
+  roomName?: string;
+  roomLocation?: string;
   date: string; // YYYY-MM-DD
   time: string; // HH:mm
   duration: number; // in minutes

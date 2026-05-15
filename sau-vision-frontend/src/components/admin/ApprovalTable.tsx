@@ -1,19 +1,15 @@
 import React from 'react';
-import type { Booking, Room } from '../../types';
+import type { Booking } from '../../types';
 import { Check, X, Clock, AlertTriangle, ShieldCheck } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 interface ApprovalTableProps {
   bookings: Booking[];
-  rooms: Room[];
   onApprove: (id: string) => void;
   onReject: (id: string) => void;
 }
 
-export default function ApprovalTable({ bookings, rooms, onApprove, onReject }: ApprovalTableProps) {
-  const getRoomName = (roomId: string) => {
-    return rooms.find(r => r.id === roomId)?.name || 'Unknown Room';
-  };
+export default function ApprovalTable({ bookings, onApprove, onReject }: ApprovalTableProps) {
 
   const getReliabilityBadge = (score: number) => {
     if (score >= 90) return <span className="status-green px-2 py-0.5 rounded-md text-xs border">High ({score}%)</span>;
@@ -49,14 +45,14 @@ export default function ApprovalTable({ bookings, rooms, onApprove, onReject }: 
             {bookings.map((booking) => (
               <tr key={booking.id} className="hover:bg-white/[0.02] transition-colors group">
                 <td className="px-6 py-4">
-                  <div className="font-medium text-white">{booking.studentId}</div>
+                  <div className="font-medium text-white">{booking.studentName || booking.studentId}</div>
                   <div className="text-gray-400 flex items-center gap-1.5 mt-1 text-xs">
                     <Clock className="w-3 h-3" />
                     {booking.date} at {booking.time} ({booking.duration}m)
                   </div>
                 </td>
                 <td className="px-6 py-4 text-gray-300 font-medium">
-                  {getRoomName(booking.roomId)}
+                  {booking.roomName || 'Unknown Room'}
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-2">

@@ -1,31 +1,81 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import ApprovalTable from '../components/admin/ApprovalTable';
 import NotificationBadge from '../components/admin/NotificationBadge';
-import { mockBookings, mockRooms } from '../lib/mockData';
 import type { Booking } from '../types';
 import { ShieldCheck, BarChart3, Users, LayoutDashboard } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import api from '../lib/api';
 
 export default function Admin() {
   const { user } = useAuth();
-  const [bookings, setBookings] = useState<Booking[]>(mockBookings);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchBookings = async () => {
+      try {
+        const response = await api.get('/bookings');
+        
+        const mapped: Booking[] = response.data.map((b: any) => {
+          const startDate = new Date(b.scheduledStart);
+          const endDate = new Date(b.scheduledEnd);
+          const duration = Math.round((endDate.getTime() - startDate.getTime()) / 60000);
+          const dateStr = startDate.toISOString().split('T')[0];
+          const timeStr = startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+          return {
+            id: b.id,
+            roomId: b.labId,
+            studentId: b.student?.universityId || b.studentId,
+            studentName: b.student?.fullName || b.studentId,
+            roomName: b.lab?.name || 'Unknown Room',
+            roomLocation: b.lab ? `Floor ${b.lab.floor}, Room ${b.lab.roomNumber}` : 'Unknown Location',
+            date: dateStr,
+            time: timeStr,
+            duration,
+            status: b.status,
+            reliabilityScore: 95,
+            qrToken: b.status === 'approved' ? `live-qr-${b.id}` : undefined
+          };
+        });
+
+        setBookings(mapped);
+      } catch (error) {
+        console.error('Failed to fetch bookings', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchBookings();
+  }, []);
 
   const pendingBookings = bookings.filter(b => b.status === 'pending');
   const activeBookings = bookings.filter(b => b.status === 'active' || b.status === 'approved');
 
-  const handleApprove = (id: string) => {
-    setBookings(prev => prev.map(b => 
-      b.id === id ? { ...b, status: 'approved', qrToken: `live-qr-${Date.now()}` } : b
-    ));
-    // In a real app: await api.patch(`/bookings/${id}/approve`)
+  const handleApprove = async (id: string) => {
+    try {
+      await api.patch(`/bookings/${id}/status`, { status: 'approved' });
+      setBookings(prev => prev.map(b => 
+        b.id === id ? { ...b, status: 'approved', qrToken: `live-qr-${Date.now()}` } : b
+      ));
+    } catch (error) {
+      console.error('Failed to approve booking', error);
+      alert('Failed to approve booking');
+    }
   };
 
-  const handleReject = (id: string) => {
-    setBookings(prev => prev.map(b => 
-      b.id === id ? { ...b, status: 'rejected' } : b
-    ));
-    // In a real app: await api.patch(`/bookings/${id}/reject`)
+  const handleReject = async (id: string) => {
+    try {
+      await api.patch(`/bookings/${id}/status`, { status: 'rejected' });
+      setBookings(prev => prev.map(b => 
+        b.id === id ? { ...b, status: 'rejected' } : b
+      ));
+    } catch (error) {
+      console.error('Failed to reject booking', error);
+      alert('Failed to reject booking');
+    }
   };
 
   return (
@@ -78,12 +128,15 @@ export default function Admin() {
               </h2>
             </div>
             
-            <ApprovalTable 
-              bookings={pendingBookings} 
-              rooms={mockRooms}
-              onApprove={handleApprove}
-              onReject={handleReject}
-            />
+            {isLoading ? (
+              <div className="glass-card p-8 text-center text-gray-400">Loading bookings...</div>
+            ) : (
+              <ApprovalTable 
+                bookings={pendingBookings} 
+                onApprove={handleApprove}
+                onReject={handleReject}
+              />
+            )}
           </div>
 
           {/* Sidebar (Takes 1/3 width) */}
@@ -98,17 +151,14 @@ export default function Admin() {
             <div className="glass-card p-1">
               {/* Mock Reports List */}
               <div className="divide-y divide-white/5">
-                {[mockBookings.find(b => b.id === 'b5')].filter(Boolean).map(booking => {
-                  if (!booking) return null;
-                  const room = mockRooms.find(r => r.id === booking.roomId);
-                  return (
+                {bookings.filter(b => b.status === 'completed').slice(0, 1).map(booking => (
                     <Link 
                       key={booking.id} 
                       to={`/admin/reports/${booking.id}`}
                       className="block p-4 hover:bg-white/[0.02] transition-colors"
                     >
                       <div className="flex justify-between items-start mb-1">
-                        <div className="font-medium text-white text-sm">{room?.name}</div>
+                        <div className="font-medium text-white text-sm">{booking.roomName}</div>
                         <span className="text-[10px] uppercase px-2 py-0.5 rounded-full bg-electric-500/20 text-electric-400 border border-electric-500/30">
                           Ready
                         </span>
@@ -117,8 +167,7 @@ export default function Admin() {
                         {booking.date} • {booking.time} ({booking.duration}m)
                       </div>
                     </Link>
-                  );
-                })}
+                ))}
                 
                 {/* Dummy placeholders to fill space */}
                 <div className="p-4 opacity-50">

@@ -2,48 +2,48 @@ import React, { useState, useEffect } from 'react';
 import DensityGrid from '../components/map/DensityGrid';
 import OccupancyLegend from '../components/map/OccupancyLegend';
 import CampusMap from '../components/map/CampusMap';
-import { mockRooms } from '../lib/mockData';
 import type { Room } from '../types';
-import { socketService } from '../lib/socket';
+import api from '../lib/api';
 import { Search, Filter, MapPin, Grid } from 'lucide-react';
 
 export default function MapPage() {
-  const [rooms, setRooms] = useState<Room[]>(mockRooms);
+  const [rooms, setRooms] = useState<Room[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'both' | 'map' | 'grid'>('both');
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const socket = socketService.connect();
+    const fetchRooms = async () => {
+      try {
+        const response = await api.get('/labs');
+        const labs = response.data;
+        const mappedRooms: Room[] = labs.map((lab: any) => ({
+          id: lab.id,
+          name: lab.name,
+          capacity: lab.capacity,
+          hardware: lab.aiTags || [],
+          status: lab.status,
+          occupancyPercent: lab.capacity > 0 ? Math.round((lab.currentOccupancy / lab.capacity) * 100) : 0,
+          location: `${lab.faculty?.name || 'Unknown Faculty'}, Floor ${lab.floor}, Room ${lab.roomNumber}`,
+          lat: lab.faculty?.latitude || 40.7437,
+          lng: lab.faculty?.longitude || 30.3330,
+        }));
+        setRooms(mappedRooms);
+      } catch (error) {
+        console.error('Failed to fetch labs occupancy:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-    socket.on('occupancy_update', (event: { roomId: string, percent: number }) => {
-      setRooms(prevRooms => 
-        prevRooms.map(room => 
-          room.id === event.roomId 
-            ? { 
-                ...room, 
-                occupancyPercent: event.percent,
-                status: event.percent > 0 ? 'occupied' : 'available'
-              } 
-            : room
-        )
-      );
-    });
+    // Initial fetch
+    fetchRooms();
 
-    const simInterval = setInterval(() => {
-      const randomRoomIndex = Math.floor(Math.random() * mockRooms.length);
-      const roomId = mockRooms[randomRoomIndex].id;
-      if (mockRooms[randomRoomIndex].status === 'maintenance') return;
-      
-      const newPercent = Math.floor(Math.random() * 100);
-      
-      socket.emit('occupancy_update', { roomId, percent: newPercent });
-      setRooms(prev => prev.map(r => r.id === roomId ? { ...r, occupancyPercent: newPercent } : r));
-      
-    }, 3000);
+    // Poll every 5 seconds for real-time updates
+    const pollInterval = setInterval(fetchRooms, 5000);
 
     return () => {
-      socket.off('occupancy_update');
-      clearInterval(simInterval);
+      clearInterval(pollInterval);
     };
   }, []);
 
