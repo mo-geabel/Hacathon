@@ -1,14 +1,17 @@
-import { drizzle } from "drizzle-orm/node-postgres";
-import { Pool } from "pg";
+import { Pool, neonConfig } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-serverless";
+
+// ws is a CommonJS module — use require to avoid ESM default-import issues
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+neonConfig.webSocketConstructor = require("ws");
+
+if (!process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL is not set — check your .env file");
+}
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
 import * as schema from "./schema";
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  max: 20,
-  idleTimeoutMillis: 30_000,
-  connectionTimeoutMillis: 5_000,
-});
-
-/** Singleton Drizzle client — import `db` everywhere */
 export const db = drizzle(pool, { schema });
 export type DB = typeof db;
