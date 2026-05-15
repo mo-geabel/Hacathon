@@ -35,11 +35,23 @@ The database has been seeded with the following official faculties of Sakarya Un
 ---
 > **Note:** Each faculty also automatically generated a default main laboratory to ensure the frontend Map has bookable spaces out of the box.
 
-## 6. Iletisim Fakültesi (Esentepe Kampüsü)
-* **Code:** \COM\`n* **Location:** Lat: \40.7420\, Lng: \30.3340\`n* **Admin Login:** \dmin.com@sau.edu.tr\`n* **Password:** \dmin123\`n* **Labs:** 10 Specialized Labs (TV Studio, Mac Labs, etc.)
+## 6. Iletisim Fakltesi (Esentepe Kamps)
+* **Code:** `COM`
+* **Location:** Lat: `40.7420`, Lng: `30.3340`
+* **Admin Login:** `admin.com@sau.edu.tr
+* **Password:** `admin123`
+* **Labs:** 10 Specialized Labs (TV Studio, Mac Labs, etc.)
 
-## 7. Fen Fakültesi (Esentepe Kampüsü)
-* **Code:** \SCI\`n* **Location:** Lat: \40.7390\, Lng: \30.3330\`n* **Admin Login:** \dmin.sci@sau.edu.tr\`n* **Password:** \dmin123\`n* **Labs:** 10 Specialized Labs (Chemistry, Physics, Biology, etc.)
+## 7. Fen Fakltesi (Esentepe Kamps)
+* **Code:** `SCI`
+* **Location:** Lat: `40.7390`, Lng: `30.3330`
+* **Admin Login:** `admin.sci@sau.edu.tr`
+* **Password:** `admin123`
+* **Labs:** 10 Specialized Labs (Chemistry, Physics, Biology, etc.)
 
-## 8. Ilahiyat Fakültesi (Ozanlar)
-* **Code:** \THEO\`n* **Location:** Lat: \40.7850\, Lng: \30.3950\`n* **Admin Login:** \dmin.theo@sau.edu.tr\`n* **Password:** \dmin123\`n* **Labs:** 10 Specialized Labs (Calligraphy, Recitation, Music, etc.)
+## 8. Ilahiyat Fakltesi (Ozanlar)
+* **Code:** `THEO`
+* **Location:** Lat: `40.7850`, Lng: `30.3950`
+* **Admin Login:** `admin.theo@sau.edu.tr`
+* **Password:** `admin123`
+* **Labs:** 10 Specialized Labs (Calligraphy, Recitation, Music, etc.)
