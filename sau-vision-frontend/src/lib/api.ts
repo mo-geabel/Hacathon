@@ -1,25 +1,41 @@
-import axios from "axios";
+import axios from 'axios';
+
+// Use mock API locally, but point to real API when deployed/ready
+const baseURL = import.meta.env.VITE_API_URL || 'https://api.sau-vision.com';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? "http://localhost:4000",
-  headers: { "Content-Type": "application/json" },
-  withCredentials: true,
+  baseURL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
+// Request interceptor to attach JWT token
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Response interceptor to handle 401 Unauthorized
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      // Don't redirect if we're already on login page to avoid loops
+      if (window.location.pathname !== '/login') {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default api;
-
-// ── Typed helpers ──────────────────────────────────────────────────────────────
-export const facilitiesApi = {
-  list: () => api.get("/api/facilities"),
-  densityMap: () => api.get("/api/facilities/density-map"),
-  get: (id: string) => api.get(`/api/facilities/${id}`),
-};
-
-export const bookingsApi = {
-  list: () => api.get("/api/bookings"),
-  get: (id: string) => api.get(`/api/bookings/${id}`),
-  create: (data: Record<string, unknown>) => api.post("/api/bookings", data),
-  parse: (text: string) => api.post("/api/bookings/parse", { text }),
-  checkin: (id: string) => api.post(`/api/bookings/${id}/checkin`),
-  cancel: (id: string) => api.patch(`/api/bookings/${id}/cancel`),
-};
