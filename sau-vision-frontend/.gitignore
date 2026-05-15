@@ -1,0 +1,24 @@
+# Dependencies & Build
+node_modules/
+dist/
+build/
+
+# Environment
+.env
+.env.local
+!.env.example
+
+# Vite cache
+.vite/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.tsbuildinfo
