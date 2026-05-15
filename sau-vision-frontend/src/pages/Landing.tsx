@@ -5,9 +5,9 @@ import { mockRooms } from '../lib/mockData';
 
 // The 3 images you placed in /public/images/
 const HERO_IMAGES = [
-  { src: '/images/campus1.jpg', caption: 'Students Learning Together' },
-  { src: '/images/campus2.jpg', caption: 'Campus Life at SAÜ' },
-  { src: '/images/campus3.jpg', caption: 'World-Class Labs & Facilities' },
+  { src: '/images/students-sitting-lawn-reading.jpg', caption: 'Students Learning Together' },
+  { src: '/images/high-school-students-conducting-hands-on-engineering-experiment-in-lab-photo.jpg', caption: 'World-Class Labs & Facilities' },
+  { src: '/images/multiethnic-group-happy-students-posing-classroom.jpg', caption: 'Campus Life at SAÜ' },
 ];
 
 export default function Landing() {

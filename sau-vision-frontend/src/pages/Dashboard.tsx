@@ -1,15 +1,57 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import ChatWindow from '../components/chatbot/ChatWindow';
-import { mockBookings, mockRooms } from '../lib/mockData';
 import { Clock, QrCode, CheckCircle2, MapPin } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import type { Booking } from '../types';
+import api from '../lib/api';
 
 export default function Dashboard() {
   const { user } = useAuth();
-  
-  // Get only this student's bookings
-  const myBookings = mockBookings.filter(b => b.studentId === user?.id || b.studentId === 's1'); // Fallback to 's1' for demo
+  const [myBookings, setMyBookings] = useState<Booking[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchBookings = async () => {
+      try {
+        const response = await api.get('/bookings');
+        const backendBookings = response.data.filter((b: any) => b.studentId === user?.id);
+        
+        const mapped: Booking[] = backendBookings.map((b: any) => {
+          const startDate = new Date(b.scheduledStart);
+          const endDate = new Date(b.scheduledEnd);
+          const duration = Math.round((endDate.getTime() - startDate.getTime()) / 60000);
+          const dateStr = startDate.toISOString().split('T')[0];
+          const timeStr = startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+          return {
+            id: b.id,
+            roomId: b.labId,
+            studentId: b.student?.fullName || b.studentId,
+            studentName: b.student?.fullName,
+            roomName: b.lab?.name || 'Unknown Room',
+            roomLocation: b.lab ? `Floor ${b.lab.floor}, Room ${b.lab.roomNumber}` : 'Unknown Location',
+            date: dateStr,
+            time: timeStr,
+            duration,
+            status: b.status,
+            reliabilityScore: 95,
+            qrToken: b.status === 'approved' ? `live-qr-${b.id}` : undefined
+          };
+        });
+
+        setMyBookings(mapped);
+      } catch (error) {
+        console.error('Failed to fetch bookings', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (user?.id) {
+      fetchBookings();
+    }
+  }, [user]);
 
   return (
     <div className="min-h-screen bg-navy-900 pt-24 pb-12 px-4 sm:px-6 lg:px-8">
@@ -35,13 +77,16 @@ export default function Dashboard() {
             </h2>
 
             <div className="space-y-4">
-              {myBookings.length === 0 ? (
+              {isLoading ? (
+                <div className="glass-card p-8 text-center text-gray-400">
+                  Loading bookings...
+                </div>
+              ) : myBookings.length === 0 ? (
                 <div className="glass-card p-8 text-center text-gray-400">
                   No previous bookings found. Use the chat to book a room!
                 </div>
               ) : (
                 myBookings.map((booking) => {
-                  const room = mockRooms.find(r => r.id === booking.roomId);
                   const isApproved = booking.status === 'approved';
                   
                   return (
@@ -52,9 +97,9 @@ export default function Dashboard() {
                       
                       <div className="flex justify-between items-start mb-3">
                         <div>
-                          <h4 className="font-semibold text-white">{room?.name || 'Unknown Room'}</h4>
+                          <h4 className="font-semibold text-white">{booking.roomName}</h4>
                           <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
-                            <MapPin className="w-3 h-3" /> {room?.location}
+                            <MapPin className="w-3 h-3" /> {booking.roomLocation}
                           </p>
                         </div>
                         <span className={`text-[10px] uppercase px-2 py-0.5 rounded-full border ${

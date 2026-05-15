@@ -27,10 +27,10 @@ export default function Login() {
     }
 
     try {
-      await login(email, role);
-      navigate(role === 'admin' ? '/admin' : '/dashboard');
-    } catch (err) {
-      setError('Failed to login. Please try again.');
+      await login(email, password);
+      // The redirect is handled at the top of the component once isAuthenticated becomes true
+    } catch (err: any) {
+      setError(err.message || 'Failed to login. Please try again.');
     }
   };
 
@@ -159,10 +159,6 @@ export default function Login() {
               </button>
             </div>
           </form>
-          
-          <div className="mt-6 text-center text-xs text-gray-500">
-            For demo purposes, any email/password combination will work.
-          </div>
         </div>
       </div>
     </div>

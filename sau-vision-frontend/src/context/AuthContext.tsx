@@ -1,12 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { User } from '../types';
-import { mockDelay } from '../lib/mockData';
+import api from '../lib/api';
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
-  login: (email: string, role: 'student' | 'admin') => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
 }
@@ -30,26 +30,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(false);
   }, []);
 
-  const login = async (email: string, role: 'student' | 'admin') => {
+  const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // Simulate API call
-      await mockDelay(800);
+      const response = await api.post('/auth/login', { email, password });
+      const { token, user: backendUser } = response.data;
       
-      const mockUser: User = {
-        id: role === 'admin' ? 'admin1' : 's1',
-        name: role === 'admin' ? 'Campus Admin' : 'John Doe',
-        email,
-        role,
+      const mappedUser: User = {
+        id: backendUser.id,
+        name: backendUser.fullName,
+        email: backendUser.email,
+        role: backendUser.role,
       };
       
-      const mockToken = `mock-jwt-token-${role}-${Date.now()}`;
+      setUser(mappedUser);
+      setToken(token);
       
-      setUser(mockUser);
-      setToken(mockToken);
-      
-      localStorage.setItem('token', mockToken);
-      localStorage.setItem('user', JSON.stringify(mockUser));
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(mappedUser));
+    } catch (error: any) {
+      console.error('Login failed:', error);
+      throw new Error(error.response?.data?.error || 'Failed to login');
     } finally {
       setIsLoading(false);
     }
