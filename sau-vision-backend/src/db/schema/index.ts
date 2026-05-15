@@ -1,4 +1,3 @@
-export * from "./users";
-export * from "./facilities";
-export * from "./bookings";
-export * from "./event_analytics";
+export * from "./faculties";
+export * from "./admins";
+export * from "./students";    // depends on: users

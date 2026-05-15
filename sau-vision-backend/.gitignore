@@ -1,25 +1,17 @@
 # Dependencies & Build
 node_modules/
 dist/
-build/
+drizzle/
 
-# Environment (never commit secrets)
+# Environment — never commit secrets
 .env
 .env.local
 !.env.example
 
-# Drizzle generated migrations
-drizzle/
-
 # Logs
 *.log
-logs/
 
-# OS
+# OS / IDE
 .DS_Store
-Thumbs.db
-
-# IDE
 .vscode/
-.idea/
 *.tsbuildinfo
