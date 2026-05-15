@@ -1,14 +1,14 @@
 import type { Room, Booking, ROIReport } from '../types';
 
 export const mockRooms: Room[] = [
-  { id: 'r1', name: 'Lab 101', capacity: 30, hardware: ['Computers', 'Projector'], status: 'available', occupancyPercent: 20, location: 'Building A, Floor 1' },
-  { id: 'r2', name: 'GPU Farm', capacity: 15, hardware: ['GPU Workstations'], status: 'occupied', occupancyPercent: 95, location: 'Building B, Floor 2' },
-  { id: 'r3', name: 'Seminar Room A', capacity: 50, hardware: ['Smartboard', 'Mic System'], status: 'available', occupancyPercent: 0, location: 'Building A, Floor 2' },
-  { id: 'r4', name: 'Mac Lab', capacity: 25, hardware: ['Macs'], status: 'available', occupancyPercent: 45, location: 'Building C, Floor 1' },
-  { id: 'r5', name: 'Study Pod 1', capacity: 4, hardware: ['Whiteboard'], status: 'occupied', occupancyPercent: 100, location: 'Library, Floor 1' },
-  { id: 'r6', name: 'Study Pod 2', capacity: 4, hardware: ['Whiteboard'], status: 'available', occupancyPercent: 25, location: 'Library, Floor 1' },
-  { id: 'r7', name: 'Robotics Lab', capacity: 20, hardware: ['3D Printers', 'IoT Kits'], status: 'maintenance', occupancyPercent: 0, location: 'Building D, Basement' },
-  { id: 'r8', name: 'Lecture Hall', capacity: 150, hardware: ['Projector', 'PA System'], status: 'occupied', occupancyPercent: 85, location: 'Main Building' },
+  { id: 'r1', name: 'Lab 101', capacity: 30, hardware: ['Computers', 'Projector'], status: 'available', occupancyPercent: 20, location: 'Building A, Floor 1', lat: 40.7437, lng: 30.3330 },
+  { id: 'r2', name: 'Lab 203', capacity: 25, hardware: ['Computers', '3D Printers'], status: 'occupied', occupancyPercent: 85, location: 'Building B, Floor 2', lat: 40.7441, lng: 30.3338 },
+  { id: 'r3', name: 'Conference Hall', capacity: 150, hardware: ['Projector', 'Audio System'], status: 'available', occupancyPercent: 5, location: 'Admin Block, Floor 1', lat: 40.7429, lng: 30.3342 },
+  { id: 'r4', name: 'Computer Lab 1', capacity: 40, hardware: ['Computers', 'Whiteboard'], status: 'maintenance', occupancyPercent: 0, location: 'CS Building, Floor 1', lat: 40.7434, lng: 30.3325 },
+  { id: 'r5', name: 'Meeting Room A', capacity: 10, hardware: ['TV Screen'], status: 'available', occupancyPercent: 60, location: 'Building A, Floor 2', lat: 40.7438, lng: 30.3332 },
+  { id: 'r6', name: 'Study Area 1', capacity: 50, hardware: ['Power Outlets'], status: 'occupied', occupancyPercent: 95, location: 'Library, Floor 1', lat: 40.7425, lng: 30.3335 },
+  { id: 'r7', name: 'Robotics Lab', capacity: 20, hardware: ['Robotic Arms', 'Computers'], status: 'available', occupancyPercent: 30, location: 'Engineering Block, Floor 1', lat: 40.7445, lng: 30.3340 },
+  { id: 'r8', name: 'VR Studio', capacity: 15, hardware: ['VR Headsets', 'High-end PCs'], status: 'maintenance', occupancyPercent: 0, location: 'Innovation Center, Floor 3', lat: 40.7440, lng: 30.3320 },
 ];
 
 export const mockBookings: Booking[] = [

@@ -1,22 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import DensityGrid from '../components/map/DensityGrid';
 import OccupancyLegend from '../components/map/OccupancyLegend';
+import CampusMap from '../components/map/CampusMap';
 import { mockRooms } from '../lib/mockData';
 import type { Room } from '../types';
 import { socketService } from '../lib/socket';
-import { Search, Filter } from 'lucide-react';
+import { Search, Filter, MapPin, Grid } from 'lucide-react';
 
 export default function MapPage() {
   const [rooms, setRooms] = useState<Room[]>(mockRooms);
   const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState<'both' | 'map' | 'grid'>('both');
 
   useEffect(() => {
-    // In a real app, we would fetch initial state from API here
-    // const fetchRooms = async () => { ... }
-
     const socket = socketService.connect();
 
-    // Listen for real-time occupancy updates
     socket.on('occupancy_update', (event: { roomId: string, percent: number }) => {
       setRooms(prevRooms => 
         prevRooms.map(room => 
@@ -31,18 +29,14 @@ export default function MapPage() {
       );
     });
 
-    // Simulate random real-time updates for demonstration purposes
     const simInterval = setInterval(() => {
       const randomRoomIndex = Math.floor(Math.random() * mockRooms.length);
       const roomId = mockRooms[randomRoomIndex].id;
-      // Skip maintenance rooms
       if (mockRooms[randomRoomIndex].status === 'maintenance') return;
       
       const newPercent = Math.floor(Math.random() * 100);
       
-      // Simulate receiving an event from the backend
       socket.emit('occupancy_update', { roomId, percent: newPercent });
-      // In local dev without backend, we just update state directly
       setRooms(prev => prev.map(r => r.id === roomId ? { ...r, occupancyPercent: newPercent } : r));
       
     }, 3000);
@@ -55,41 +49,82 @@ export default function MapPage() {
 
   const filteredRooms = rooms.filter(room => 
     room.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    room.hardware.some(hw => hw.toLowerCase().includes(searchQuery.toLowerCase()))
+    room.hardware.some(hw => hw.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    room.location.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
     <div className="min-h-screen bg-navy-900 pt-24 pb-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+        {/* Header Controls */}
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-6">
           <div>
             <h1 className="text-3xl font-bold text-white mb-2">Campus Density Map</h1>
             <p className="text-gray-400">Real-time occupancy tracking via IoT vision</p>
           </div>
 
-          <div className="w-full md:w-auto flex flex-col sm:flex-row gap-4">
-            <div className="relative">
+          <div className="w-full lg:w-auto flex flex-col sm:flex-row items-center gap-4">
+            
+            {/* View Toggle */}
+            <div className="flex bg-navy-800 p-1 rounded-lg border border-white/5 w-full sm:w-auto">
+              <button 
+                onClick={() => setViewMode('both')}
+                className={`flex-1 sm:flex-none px-4 py-1.5 text-sm rounded-md transition-colors ${viewMode === 'both' ? 'bg-electric-600 text-white' : 'text-gray-400 hover:text-white'}`}
+              >
+                Split
+              </button>
+              <button 
+                onClick={() => setViewMode('map')}
+                className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-1.5 text-sm rounded-md transition-colors ${viewMode === 'map' ? 'bg-electric-600 text-white' : 'text-gray-400 hover:text-white'}`}
+              >
+                <MapPin className="w-3.5 h-3.5" /> Map
+              </button>
+              <button 
+                onClick={() => setViewMode('grid')}
+                className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-1.5 text-sm rounded-md transition-colors ${viewMode === 'grid' ? 'bg-electric-600 text-white' : 'text-gray-400 hover:text-white'}`}
+              >
+                <Grid className="w-3.5 h-3.5" /> Grid
+              </button>
+            </div>
+
+            <div className="relative w-full sm:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
               <input 
                 type="text" 
-                placeholder="Search rooms or hardware..." 
+                placeholder="Search rooms..." 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full sm:w-64 bg-navy-800 border border-white/10 rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-electric-500 transition-all"
+                className="w-full bg-navy-800 border border-white/10 rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-electric-500 transition-all"
               />
             </div>
-            <button className="btn-ghost flex items-center justify-center gap-2">
+            <button className="btn-ghost flex items-center justify-center gap-2 w-full sm:w-auto">
               <Filter className="w-4 h-4" /> Filter
             </button>
           </div>
         </div>
 
-        <div className="mb-8">
+        <div className="mb-6">
           <OccupancyLegend />
         </div>
 
-        <DensityGrid rooms={filteredRooms} />
+        {/* Content Area */}
+        <div className="space-y-8">
+          {(viewMode === 'both' || viewMode === 'map') && (
+            <div className="h-[500px] lg:h-[600px] w-full animate-fade-in relative z-0">
+              <CampusMap rooms={filteredRooms} />
+            </div>
+          )}
+
+          {(viewMode === 'both' || viewMode === 'grid') && (
+            <div className="animate-fade-in">
+              {viewMode === 'both' && (
+                <h2 className="text-xl font-bold text-white mb-4 border-b border-white/10 pb-2">Room Details</h2>
+              )}
+              <DensityGrid rooms={filteredRooms} />
+            </div>
+          )}
+        </div>
         
       </div>
     </div>
