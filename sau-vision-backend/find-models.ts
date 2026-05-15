@@ -1,0 +1,1 @@
+import "dotenv/config"; async function run() { try { const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models?key=" + process.env.GEMINI_API_KEY); const data = await r.json(); const models = data.models.map(m => m.name).filter(n => n.includes("gemini")); console.log(models); } catch(e) { console.error(e); } } run();

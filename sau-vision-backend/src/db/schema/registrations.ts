@@ -4,6 +4,7 @@ import {
   timestamp,
   pgEnum,
   text,
+  integer,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { students } from "./students";
@@ -13,7 +14,10 @@ import { bookings } from "./bookings";
 // ENUMS
 // ─────────────────────────────────────────────────────────────────────────────
 export const registrationStatusEnum = pgEnum("registration_status", [
-  "registered",   // Student is signed up to attend
+  "pending",      // Waiting for admin approval
+  "approved",     // Approved by admin
+  "rejected",     // Rejected by admin
+  "registered",   // Student is signed up to attend (legacy/auto-approved)
   "cancelled",    // Student cancelled their registration
   "attended",     // Student successfully checked in at the event
   "no_show",      // Event ended and student never checked in
@@ -40,7 +44,11 @@ export const registrations = pgTable("registrations", {
     .references(() => bookings.id, { onDelete: "cascade" }),
 
   // ── Status & Check-in ──────────────────────────────────────────────────────
-  status: registrationStatusEnum("status").notNull().default("registered"),
+  status: registrationStatusEnum("status").notNull().default("pending"),
+
+  // ── AI Filtering (puq.ai / Gemini) ─────────────────────────────────────────
+  aiScore: integer("ai_score"),
+  aiRecommendation: text("ai_recommendation"),
 
   /** When the student physically scanned the IoT QR code to enter the room */
   checkInTime: timestamp("check_in_time", { withTimezone: true }),
