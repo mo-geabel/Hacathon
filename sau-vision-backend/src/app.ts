@@ -1,10 +1,26 @@
 import express from "express";
 import "dotenv/config";
+import cors from "cors";
+
+// Routers
+import authRoutes from "./routes/api/auth";
+import facultiesRoutes from "./routes/api/faculties";
+import labsRoutes from "./routes/api/labs";
+import bookingsRoutes from "./routes/api/bookings";
+import registrationsRoutes from "./routes/api/registrations";
 
 const app = express();
 const PORT = process.env.PORT ?? 4000;
 
+app.use(cors());
 app.use(express.json());
+
+// API Routes
+app.use("/api/auth", authRoutes);
+app.use("/api/faculties", facultiesRoutes);
+app.use("/api/labs", labsRoutes);
+app.use("/api/bookings", bookingsRoutes);
+app.use("/api/registrations", registrationsRoutes);
 
 // Health check
 app.get("/health", (_req, res) => {
@@ -15,3 +31,4 @@ app.listen(PORT, () => {
   console.log(`\n🚀 Server running → http://localhost:${PORT}`);
   console.log(`   Health check  → http://localhost:${PORT}/health\n`);
 });
+

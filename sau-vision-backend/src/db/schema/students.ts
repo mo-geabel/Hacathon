@@ -56,7 +56,6 @@ export const students = pgTable("students", {
 
   // ── Status ─────────────────────────────────────────────────────────────────
   /** Student must verify email before booking facilities. */
-  isVerified: boolean("is_verified").notNull().default(false),
   isActive: boolean("is_active").notNull().default(true),
 
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
