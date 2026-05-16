@@ -122,6 +122,22 @@ router.post("/", requireAuth, requireStudent, asyncHandler(async (req: Request, 
     return;
   }
 
+  // Check business hours 09:00 to 18:30
+  const startTotalMins = start.getHours() * 60 + start.getMinutes();
+  const endTotalMins = end.getHours() * 60 + end.getMinutes();
+  if (startTotalMins < 9 * 60 || endTotalMins > 18 * 60 + 30) {
+    res.status(400).json({ error: "Bookings must be between 09:00 and 18:30." });
+    return;
+  }
+
+  // Prevent booking in the past (allow a 5-minute grace period for latency)
+  const now = new Date();
+  const gracePeriodStart = new Date(now.getTime() - 5 * 60000);
+  if (start < gracePeriodStart) {
+    res.status(400).json({ error: "Cannot schedule a booking in the past." });
+    return;
+  }
+
   // Verify the lab exists and is active
   const lab = await db.query.labs.findFirst({
     where: and(eq(labs.id, labId), eq(labs.isActive, true)),
@@ -455,6 +471,14 @@ router.patch("/:id", requireAuth, requireStudent, asyncHandler(async (req: Reque
     if (timeOrLabChanged) {
       if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) {
         res.status(400).json({ error: "Invalid scheduledStart / scheduledEnd" });
+        return;
+      }
+
+      // Check business hours 09:00 to 18:30
+      const startTotalMins = start.getHours() * 60 + start.getMinutes();
+      const endTotalMins = end.getHours() * 60 + end.getMinutes();
+      if (startTotalMins < 9 * 60 || endTotalMins > 18 * 60 + 30) {
+        res.status(400).json({ error: "Bookings must be between 09:00 and 18:30." });
         return;
       }
       updates.scheduledStart = start;

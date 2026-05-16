@@ -122,13 +122,18 @@ export const labs = pgTable("labs", {
 
 // ─── Relations ────────────────────────────────────────────────────────────────
 
-/** Each lab belongs to one faculty */
-export const labsRelations = relations(labs, ({ one }) => ({
-  faculty: one(faculties, {
-    fields: [labs.facultyId],
-    references: [faculties.id],
-  }),
-}));
+/** Each lab belongs to one faculty and has many bookings */
+export const labsRelations = relations(labs, ({ one, many }) => {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { bookings } = require("./bookings");
+  return {
+    faculty: one(faculties, {
+      fields: [labs.facultyId],
+      references: [faculties.id],
+    }),
+    bookings: many(bookings),
+  };
+});
 
 /**
  * Each faculty has many labs.
