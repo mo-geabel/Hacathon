@@ -16,7 +16,8 @@ export default function Login() {
   if (isAuthenticated && user) {
     const params = new URLSearchParams(location.search);
     const returnTo = params.get('returnTo');
-    const dest = returnTo || (user.role === 'admin' ? '/admin' : '/dashboard');
+    const redirect = params.get('redirect');
+    const dest = redirect || returnTo || (user.role === 'admin' ? '/admin' : '/dashboard');
     return <Navigate to={dest} replace />;
   }
 

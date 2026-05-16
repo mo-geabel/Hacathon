@@ -8,11 +8,36 @@ import type { Room } from '../../types';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-interface GeminiResult {
-  matchedLabId: string | null;
-  confidenceScore: number;
-  reason: string;
-  detectedRequirements: string[];
+interface AISuggestion {
+  rank: number;
+  labId: string;
+  labName: string;
+  facultyName: string;
+  matchScore: number;
+  reasoning: string;
+  lab: {
+    id: string;
+    name: string;
+    type: string;
+    capacity: number;
+    floor?: number | null;
+    roomNumber?: string | null;
+    status: string;
+    faculty?: { name: string; code: string };
+    aiTags?: string[] | null;
+    aiDescription?: string | null;
+  };
+}
+
+interface ParseResponse {
+  originalPrompt: string;
+  availableLabCount: number;
+  suggestions: AISuggestion[];
+  bookingDetails: {
+    extractedTitle: string;
+    extractedDescription: string;
+    suggestedAttendees: number;
+  };
 }
 
 interface Suggestion {
@@ -100,45 +125,51 @@ export default function ChatWindow() {
       const time = parseTime(userText);
 
       // ── 2. Call the real Gemini NL endpoint on our backend ──────────────────
-      const { data } = await api.post('/bookings/parse', {
+      const { data }: { data: ParseResponse } = await api.post('/bookings/parse', {
         prompt: userText,
         expectedAttendees: attendees,
       });
 
-      const result: GeminiResult = data.geminiResult;
+      // ── 3. New response format: { suggestions: [...], bookingDetails: {} } ──
+      const suggestions = data.suggestions || [];
 
-      // ── 3. No match found ───────────────────────────────────────────────────
-      if (!result.matchedLabId) {
+      if (suggestions.length === 0) {
         addMessage({
           role: 'assistant',
-          content: result.reason || "I couldn't find a room that matches your requirements. Could you try a different time or adjust the capacity?",
+          content: data.bookingDetails?.extractedDescription
+            || "I couldn't find a room that matches your requirements. Could you try a different time or adjust the capacity?",
         });
         return;
       }
 
-      // ── 4. Fetch the matched lab details ────────────────────────────────────
-      const { data: lab } = await api.get(`/labs/${result.matchedLabId}`);
-
-      const room: Room = {
-        id: lab.id,
-        name: lab.name,
-        capacity: lab.capacity,
-        hardware: Array.isArray(lab.aiTags) ? lab.aiTags : [],
-        status: lab.status,
-        occupancyPercent: lab.capacity > 0
-          ? Math.round((lab.currentOccupancy / lab.capacity) * 100)
-          : 0,
-        location: lab.faculty
-          ? `${lab.faculty.name}, Floor ${lab.floor}, Room ${lab.roomNumber}`
-          : `Floor ${lab.floor}, Room ${lab.roomNumber}`,
-      };
-
-      // ── 5. Show Gemini's reasoning + room suggestion card ───────────────────
+      // ── 4. Show an intro message then a card for each suggestion ────────────
       addMessage({
         role: 'assistant',
-        content: result.reason,
-        suggestion: { room, date, time, attendees: attendees ?? 1 },
+        content: `I found **${suggestions.length}** great lab${suggestions.length > 1 ? 's' : ''} for you! Here are my top recommendation${suggestions.length > 1 ? 's' : ''}:`,
       });
+
+      for (const suggestion of suggestions) {
+        const lab = suggestion.lab;
+        if (!lab) continue;
+
+        const room: Room = {
+          id: lab.id,
+          name: lab.name,
+          capacity: lab.capacity,
+          hardware: Array.isArray(lab.aiTags) ? lab.aiTags : [],
+          status: lab.status as Room['status'],
+          occupancyPercent: 0,
+          location: lab.faculty
+            ? `${lab.faculty.name}, Floor ${lab.floor ?? '?'}, Room ${lab.roomNumber ?? '?'}`
+            : `Floor ${lab.floor ?? '?'}, Room ${lab.roomNumber ?? '?'}`,
+        };
+
+        addMessage({
+          role: 'assistant',
+          content: `**#${suggestion.rank} — ${lab.name}** (Match: ${suggestion.matchScore}%)\n${suggestion.reasoning}`,
+          suggestion: { room, date, time, attendees: attendees ?? data.bookingDetails?.suggestedAttendees ?? 1 },
+        });
+      }
 
     } catch (err: any) {
       const serverMsg = err?.response?.data?.error;
