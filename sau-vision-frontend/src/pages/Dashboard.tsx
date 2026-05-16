@@ -444,17 +444,32 @@ export default function Dashboard() {
                       </div>
                       {isApproved && (
                         <div className="flex flex-col gap-2 mb-3">
-                          <button
-                            onClick={() => setQrModalEvent({
-                              bookingId: booking.id,
-                              title: booking.title || booking.roomName,
-                              labName: booking.roomName,
-                              scheduledStart: `${booking.date}T${booking.time}`
-                            })}
-                            className="w-full btn-primary py-2 px-4 text-sm flex items-center justify-center gap-2"
-                          >
-                            <QrCode className="w-4 h-4" /> Show Event QR Code
-                          </button>
+                          {(() => {
+                            const [hours, minutes] = booking.time.split(':').map(Number);
+                            const start = new Date(booking.date);
+                            start.setHours(hours, minutes, 0, 0);
+                            const end = new Date(start.getTime() + booking.duration * 60000);
+                            const now = new Date();
+                            const isExpired = now.getTime() > end.getTime() + 3 * 60 * 60 * 1000;
+                            
+                            return isExpired ? (
+                              <div className="w-full bg-red-500/10 border border-red-500/20 text-red-400 py-2 px-4 text-sm text-center rounded-lg">
+                                Attendance Window Closed
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => setQrModalEvent({
+                                  bookingId: booking.id,
+                                  title: booking.title || booking.roomName || '',
+                                  labName: booking.roomName,
+                                  scheduledStart: `${booking.date}T${booking.time}`
+                                })}
+                                className="w-full btn-primary py-2 px-4 text-sm flex items-center justify-center gap-2"
+                              >
+                                <QrCode className="w-4 h-4" /> Show Event QR Code
+                              </button>
+                            );
+                          })()}
                           
                           {commentingBookingId === booking.id ? (
                             <div className="flex flex-col gap-2 mt-2">
@@ -559,35 +574,33 @@ export default function Dashboard() {
                         </div>
                       </div>
 
-                      <div className="shrink-0 flex flex-col items-end gap-3 border-t md:border-t-0 md:border-l border-white/10 pt-4 md:pt-0 md:pl-6">
-                        {/* QR Code Button */}
-                        <button
-                          onClick={() => setQrModalEvent({ bookingId: event.id, title: event.title })}
-                          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-electric-500/10 border border-electric-500/30 text-electric-400 hover:bg-electric-500/20 transition-all text-sm font-semibold"
-                        >
-                          <QrCode className="w-4 h-4" />
-                          {reg.status === 'attended' ? 'View QR' : 'Show My QR'}
-                        </button>
-
-                        {reg.status === 'attended' && (
+                      <div className="shrink-0 flex flex-col items-center gap-3 border-t md:border-t-0 md:border-l border-white/10 pt-4 md:pt-0 md:pl-6 min-w-[120px]">
+                        {/* Guests never show a QR — the host displays the event QR at the door */}
+                        {reg.status === 'attended' ? (
                           <div className="text-sm text-center">
                             <div className="font-bold text-emerald-400 mb-1 flex items-center gap-1.5">
                               <CheckCircle2 className="w-4 h-4" /> Attended
                             </div>
                             {reg.checkInTime && (
-                              <div className="text-gray-500 text-xs">Checked in at {new Date(reg.checkInTime).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}</div>
+                              <div className="text-gray-500 text-xs">
+                                Checked in at {new Date(reg.checkInTime).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}
+                              </div>
                             )}
                           </div>
-                        )}
-
-                        {reg.status === 'registered' && (
-                          <div className="text-xs text-gray-500 text-center">
-                            Ready for check-in
+                        ) : reg.status === 'registered' ? (
+                          <div className="text-center">
+                            <div className="w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto mb-2">
+                              <Clock className="w-5 h-5 text-amber-400" />
+                            </div>
+                            <div className="text-xs text-amber-400 font-semibold">Awaiting event</div>
+                            <div className="text-xs text-gray-500 mt-0.5">Host scans you in</div>
                           </div>
+                        ) : (
+                          <div className="text-xs text-red-400 font-semibold">No Show</div>
                         )}
 
                         {reg.certificateData && (
-                          <button className="flex items-center gap-2 btn-primary py-2 px-4 text-xs w-full justify-center">
+                          <button className="flex items-center gap-2 btn-primary py-2 px-4 text-xs w-full justify-center mt-2">
                             <Download className="w-4 h-4" /> Download Certificate
                           </button>
                         )}
