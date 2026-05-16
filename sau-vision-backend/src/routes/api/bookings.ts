@@ -773,6 +773,16 @@ router.post("/checkin", requireAuth, asyncHandler(async (req: Request, res: Resp
     return;
   }
 
+  // Check if 3 hours have passed since the scheduled end time
+  const scheduledEnd = new Date(reg.booking.scheduledEnd);
+  const now = new Date();
+  const threeHoursInMs = 3 * 60 * 60 * 1000;
+  
+  if (now.getTime() > scheduledEnd.getTime() + threeHoursInMs) {
+    res.status(403).json({ error: "Attendance window closed. It has been more than 3 hours since the event ended." });
+    return;
+  }
+
   const [updatedReg] = await db
     .update(registrations)
     .set({
@@ -806,6 +816,16 @@ router.post("/:id/self-checkin", requireAuth, requireStudent, asyncHandler(async
 
   if (!booking || (booking.status !== "approved" && booking.status !== "active")) {
     res.status(404).json({ error: "Event not found or is not currently accepting attendees." });
+    return;
+  }
+
+  // Check if 3 hours have passed since the scheduled end time
+  const scheduledEnd = new Date(booking.scheduledEnd);
+  const now = new Date();
+  const threeHoursInMs = 3 * 60 * 60 * 1000;
+  
+  if (now.getTime() > scheduledEnd.getTime() + threeHoursInMs) {
+    res.status(403).json({ error: "Attendance window closed. It has been more than 3 hours since the event ended." });
     return;
   }
 
