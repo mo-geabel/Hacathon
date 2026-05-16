@@ -63,13 +63,13 @@ export default function Landing() {
       <nav className="absolute top-0 left-0 right-0 p-6 flex justify-between items-center z-50">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-electric-500 rounded-lg flex items-center justify-center glow-blue">
-            <Activity className="w-5 h-5 text-foreground" />
+            <Activity className="w-5 h-5 text-white" />
           </div>
-          <span className="text-xl font-bold tracking-tight drop-shadow-lg">SAÜ-Vision</span>
+          <span className="text-xl font-bold text-white tracking-tight drop-shadow-lg">SAÜ-Vision</span>
         </div>
         <div className="flex gap-4 items-center">
           <ThemeToggle />
-          <Link to="/map" className="text-sm font-medium text-foreground/80 hover:text-foreground transition-colors drop-shadow">
+          <Link to="/map" className="text-sm font-medium text-white/80 hover:text-white transition-colors drop-shadow">
             Campus Map
           </Link>
           <Link to="/login" className="btn-primary flex items-center gap-2 text-sm px-5 py-2">
@@ -110,7 +110,7 @@ export default function Landing() {
             <span>Next-Gen Facility Management</span>
           </div>
 
-          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-8 animate-slide-up drop-shadow-2xl text-balance">
+          <h1 className="text-5xl md:text-7xl font-extrabold text-white tracking-tight mb-8 animate-slide-up drop-shadow-2xl text-balance">
             Smart Campus, <br className="hidden md:block" />
             <span className="gradient-text">Zero Friction.</span>
           </h1>
@@ -132,13 +132,13 @@ export default function Landing() {
         {/* Slideshow Controls */}
         <button
           onClick={goToPrev}
-          className="absolute left-4 top-1/2 -translate-y-1/2 z-40 p-2 rounded-full bg-black/30 hover:bg-black/50 backdrop-blur-sm text-foreground border border-border transition-all"
+          className="absolute left-4 top-1/2 -translate-y-1/2 z-40 p-2 rounded-full bg-black/30 hover:bg-black/50 backdrop-blur-sm text-white border border-white/20 transition-all"
         >
           <ChevronLeft className="w-6 h-6" />
         </button>
         <button
           onClick={goToNext}
-          className="absolute right-4 top-1/2 -translate-y-1/2 z-40 p-2 rounded-full bg-black/30 hover:bg-black/50 backdrop-blur-sm text-foreground border border-border transition-all"
+          className="absolute right-4 top-1/2 -translate-y-1/2 z-40 p-2 rounded-full bg-black/30 hover:bg-black/50 backdrop-blur-sm text-white border border-white/20 transition-all"
         >
           <ChevronRight className="w-6 h-6" />
         </button>
@@ -159,7 +159,7 @@ export default function Landing() {
         </div>
 
         {/* Caption */}
-        <div className="absolute bottom-14 left-1/2 -translate-x-1/2 z-40 text-xs text-foreground/50 tracking-widest uppercase">
+        <div className="absolute bottom-14 left-1/2 -translate-x-1/2 z-40 text-xs text-white/70 tracking-widest uppercase">
           {HERO_IMAGES[currentSlide].caption}
         </div>
       </section>
