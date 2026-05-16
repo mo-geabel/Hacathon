@@ -544,6 +544,39 @@ router.patch("/:id/status", requireAuth, requireAdmin, asyncHandler(async (req: 
     return;
   }
 
+  // ── Prevent Double Booking on Approval ─────────────────────────────────────
+  // If the admin is trying to approve this booking, we must ensure the lab
+  // isn't ALREADY approved/active for this time slot by another request.
+  if (status === "approved") {
+    const start = new Date(booking.scheduledStart);
+    const end = new Date(booking.scheduledEnd);
+
+    const overlappingBookings = await db.query.bookings.findMany({
+      where: and(
+        eq(bookings.labId, booking.labId),
+        or(eq(bookings.status, "approved"), eq(bookings.status, "active"))
+      )
+    });
+
+    const conflict = overlappingBookings.find(
+      (b) => b.id !== bookingId && b.scheduledStart < end && b.scheduledEnd > start
+    );
+
+    if (conflict) {
+      const conflictStart = conflict.scheduledStart.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      const conflictEnd   = conflict.scheduledEnd.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      res.status(409).json({
+        error: `Cannot approve: This lab is already booked from ${conflictStart} to ${conflictEnd}.`,
+        conflict: {
+          bookingId: conflict.id,
+          scheduledStart: conflict.scheduledStart,
+          scheduledEnd: conflict.scheduledEnd,
+        },
+      });
+      return;
+    }
+  }
+
   const [updatedBooking] = await db
     .update(bookings)
     .set({ status, updatedAt: new Date() })
