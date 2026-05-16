@@ -34,6 +34,8 @@ export interface Booking {
   date: string; // YYYY-MM-DD
   time: string; // HH:mm
   endTime?: string; // HH:mm
+  scheduledStart?: string; // ISO string from backend
+  scheduledEnd?: string; // ISO string from backend
   duration: number; // in minutes
   status: 'pending' | 'approved' | 'rejected' | 'active' | 'completed' | 'ghosted' | 'cancelled';
   title?: string;
