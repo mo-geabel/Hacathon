@@ -331,7 +331,7 @@ export default function CampusImageMap({
           const color = getOccupancyColor(room.occupancyPercent);
           
           const activeBookings = room.bookings?.filter(b => b.status === 'active') || [];
-          const upcomingBookings = room.bookings?.filter(b => b.status === 'approved' && new Date(b.scheduledStart) > new Date()) || [];
+          const upcomingBookings = room.bookings?.filter(b => b.status === 'approved' && b.scheduledStart && new Date(b.scheduledStart) > new Date()) || [];
           const hasActiveBooking = activeBookings.length > 0;
           
           return (
@@ -355,13 +355,13 @@ export default function CampusImageMap({
                     {activeBookings.length > 0 && activeBookings.map(b => (
                       <div key={b.id} className="text-xs bg-emerald-50 text-emerald-700 p-1.5 rounded border border-emerald-200">
                         <span className="font-bold">🔴 Live Now:</span> {b.title} <br/>
-                        <span className="text-[10px] opacity-80">Ends at {new Date(b.scheduledEnd).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                        <span className="text-[10px] opacity-80">Ends at {b.scheduledEnd ? new Date(b.scheduledEnd).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''}</span>
                       </div>
                     ))}
                     {upcomingBookings.length > 0 && upcomingBookings.slice(0, 2).map(b => (
                       <div key={b.id} className="text-xs bg-gray-50 text-gray-700 p-1.5 rounded border border-gray-200">
                         <span className="font-bold">⏳ Upcoming:</span> {b.title} <br/>
-                        <span className="text-[10px] opacity-80">{new Date(b.scheduledStart).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                        <span className="text-[10px] opacity-80">{b.scheduledStart ? new Date(b.scheduledStart).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''}</span>
                       </div>
                     ))}
                     {activeBookings.length === 0 && upcomingBookings.length === 0 && (
