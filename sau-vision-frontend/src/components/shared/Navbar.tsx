@@ -9,17 +9,20 @@ export default function Navbar() {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Don't show navbar on login, landing, or checkin pages
+  // Don't show navbar on login, landing, checkin, student dashboard, or report detail pages
+  // (those pages either have their own nav or use a sidebar)
   if (
-    location.pathname === '/' || 
-    location.pathname === '/login' || 
-    location.pathname.includes('/checkin')
+    location.pathname === '/' ||
+    location.pathname === '/login' ||
+    location.pathname.includes('/checkin') ||
+    location.pathname === '/dashboard' ||
+    location.pathname.startsWith('/admin/reports/')
   ) {
     return null;
   }
 
   const navLinks = [];
-  
+
   if (isAuthenticated) {
     if (user?.role === 'admin') {
       navLinks.push({ name: 'Admin Dashboard', path: '/admin', icon: ShieldCheck });
@@ -27,16 +30,19 @@ export default function Navbar() {
       navLinks.push({ name: 'My Dashboard', path: '/dashboard', icon: LayoutDashboard });
     }
   }
-  
+
   navLinks.push({ name: 'Campus Map', path: '/map', icon: Map });
+
+  // Resolve where the logo should take the user
+  const logoHref = !isAuthenticated ? '/' : user?.role === 'admin' ? '/admin' : '/dashboard';
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-40 bg-navy-900/80 backdrop-blur-md border-b border-white/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
-          
+
           <div className="flex items-center gap-3">
-            <Link to={user?.role === 'admin' ? '/admin' : '/dashboard'} className="flex items-center gap-2">
+            <Link to={logoHref} className="flex items-center gap-2">
               <div className="w-8 h-8 bg-electric-500 rounded-lg flex items-center justify-center glow-blue-sm">
                 <Activity className="w-5 h-5 text-white" />
               </div>

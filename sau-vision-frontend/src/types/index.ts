@@ -10,6 +10,16 @@ export interface Room {
   lng?: number;
 }
 
+export interface CampusEvent {
+  id: string;
+  title: string;
+  description?: string;
+  date: string; // YYYY-MM-DD
+  category: 'academic' | 'sports' | 'social' | 'other';
+  mapX: number; // CRS.Simple pixel X
+  mapY: number; // CRS.Simple pixel Y
+}
+
 
 export interface Booking {
   id: string;
@@ -20,8 +30,14 @@ export interface Booking {
   roomLocation?: string;
   date: string; // YYYY-MM-DD
   time: string; // HH:mm
+  endTime?: string; // HH:mm
   duration: number; // in minutes
   status: 'pending' | 'approved' | 'rejected' | 'active' | 'completed' | 'released';
+  title?: string;
+  description?: string;
+  expectedAttendees?: number;
+  studentComment?: string;
+  lab?: Room;
   qrToken?: string;
   reliabilityScore: number; // 0-100
 }
