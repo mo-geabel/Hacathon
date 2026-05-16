@@ -10,7 +10,9 @@ function App() {
   return (
     <ThemeProvider defaultTheme="system" storageKey="sau-vision-theme">
       <AuthProvider>
-        <RouterProvider router={router} />
+        <ToastProvider>
+          <RouterProvider router={router} />
+        </ToastProvider>
       </AuthProvider>
     </ThemeProvider>
   );
