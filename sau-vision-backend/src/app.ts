@@ -8,7 +8,6 @@ import facultiesRoutes from "./routes/api/faculties";
 import labsRoutes from "./routes/api/labs";
 import bookingsRoutes from "./routes/api/bookings";
 import registrationsRoutes from "./routes/api/registrations";
-import webhooksRoutes from "./routes/api/webhooks";
 
 const app = express();
 const PORT = process.env.PORT ?? 4000;
@@ -22,7 +21,6 @@ app.use("/api/faculties", facultiesRoutes);
 app.use("/api/labs", labsRoutes);
 app.use("/api/bookings", bookingsRoutes);
 app.use("/api/registrations", registrationsRoutes);
-app.use("/api/webhooks", webhooksRoutes);
 
 // Health check
 app.get("/health", (_req, res) => {
