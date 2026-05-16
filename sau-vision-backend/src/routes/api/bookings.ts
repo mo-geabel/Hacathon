@@ -102,11 +102,92 @@ router.get("/", requireAuth, asyncHandler(async (req: Request, res: Response) =>
 }));
 
 // ─────────────────────────────────────────────────────────────────────────────
+// GET /api/bookings/events
+// Student only — fetch all approved events (expectedAttendees > 1)
+// ─────────────────────────────────────────────────────────────────────────────
+router.get("/events", requireAuth, requireStudent, asyncHandler(async (req: Request, res: Response) => {
+  const studentId = req.user!.id;
+  
+  const allEvents = await db.query.bookings.findMany({
+    where: and(
+      or(eq(bookings.status, "approved"), eq(bookings.status, "active")),
+      gte(bookings.expectedAttendees, 2)
+    ),
+    with: {
+      lab: {
+        with: { faculty: { columns: { name: true } } }
+      },
+      student: { columns: { fullName: true } },
+      registrations: true
+    },
+    orderBy: (b, { asc }) => [asc(b.scheduledStart)],
+  });
+
+  const formattedEvents = allEvents.map((event) => {
+    const isRegistered = event.registrations.some((r: any) => r.studentId === studentId);
+    
+    return {
+      id: event.id,
+      title: event.title,
+      description: event.description,
+      scheduledStart: event.scheduledStart,
+      scheduledEnd: event.scheduledEnd,
+      requiresCertificate: event.requiresCertificate,
+      expectedAttendees: event.expectedAttendees,
+      attendeeCount: event.registrations.length,
+      isRegistered,
+      lab: {
+        id: event.lab.id,
+        name: event.lab.name,
+        faculty: event.lab.faculty?.name || "Unknown Faculty",
+      },
+      organizer: event.student?.fullName || "Unknown Organizer",
+    };
+  });
+
+  res.json(formattedEvents);
+}));
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/bookings/:id/join-info
+// Public endpoint (no auth required) — fetch event info for the QR scan landing page
+// ─────────────────────────────────────────────────────────────────────────────
+router.get("/:id/join-info", asyncHandler(async (req: Request, res: Response) => {
+  const bookingId = req.params.id;
+
+  const booking = await db.query.bookings.findFirst({
+    where: eq(bookings.id, bookingId),
+    with: {
+      lab: true,
+      student: { columns: { fullName: true } },
+      registrations: true
+    }
+  });
+
+  if (!booking || (booking.status !== "approved" && booking.status !== "active")) {
+    res.status(404).json({ error: "Event not found or not active." });
+    return;
+  }
+
+  res.json({
+    id: booking.id,
+    title: booking.title,
+    scheduledStart: booking.scheduledStart,
+    scheduledEnd: booking.scheduledEnd,
+    requiresCertificate: booking.requiresCertificate,
+    expectedAttendees: booking.expectedAttendees,
+    attendeeCount: booking.registrations.length,
+    labName: booking.lab?.name || "Unknown Lab",
+    organizerName: booking.student?.fullName || "Unknown Organizer",
+  });
+}));
+
+// ─────────────────────────────────────────────────────────────────────────────
 // POST /api/bookings
 // Students only — admins manage facilities, they don't create bookings
 // ─────────────────────────────────────────────────────────────────────────────
 router.post("/", requireAuth, requireStudent, asyncHandler(async (req: Request, res: Response) => {
-  const { labId, title, description, expectedAttendees, scheduledStart, scheduledEnd } = req.body;
+  const { labId, title, description, expectedAttendees, scheduledStart, scheduledEnd, requiresCertificate } = req.body;
   const studentId = req.user!.id;
 
   if (!labId || !title || !expectedAttendees || !scheduledStart || !scheduledEnd) {
@@ -189,6 +270,7 @@ router.post("/", requireAuth, requireStudent, asyncHandler(async (req: Request, 
     expectedAttendees,
     scheduledStart: start,
     scheduledEnd: end,
+    requiresCertificate: requiresCertificate === true,
     status: "pending",
   }).returning();
 
@@ -317,9 +399,12 @@ If no lab matches, return an empty "suggestions" array and explain in "bookingDe
     `;
 
     const result = await geminiModel.generateContent(aiPrompt);
-    const responseText = result.response.text();
+    let responseText = result.response.text();
     
-    // Gemini in JSON mode guarantees valid JSON
+    // Strip markdown code fences if Gemini wraps the JSON in them (defensive)
+    responseText = responseText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+
+    // Gemini in JSON mode guarantees valid JSON, but we parse defensively
     const geminiResult = JSON.parse(responseText);
 
     // 4. Enrich each suggestion with REAL lab data from the database
@@ -712,6 +797,16 @@ router.post("/checkin", requireAuth, asyncHandler(async (req: Request, res: Resp
     return;
   }
 
+  // Check if 3 hours have passed since the scheduled end time
+  const scheduledEnd = new Date(reg.booking.scheduledEnd);
+  const now = new Date();
+  const threeHoursInMs = 3 * 60 * 60 * 1000;
+  
+  if (now.getTime() > scheduledEnd.getTime() + threeHoursInMs) {
+    res.status(403).json({ error: "Attendance window closed. It has been more than 3 hours since the event ended." });
+    return;
+  }
+
   const [updatedReg] = await db
     .update(registrations)
     .set({
@@ -727,6 +822,99 @@ router.post("/checkin", requireAuth, asyncHandler(async (req: Request, res: Resp
     registration: updatedReg
   });
 }));
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/bookings/:id/self-checkin
+// Student self-service: scan the host's event QR → register + mark attended in one shot
+// Works for both new guests (auto-registers) and already-registered guests (idempotent)
+// ─────────────────────────────────────────────────────────────────────────────
+router.post("/:id/self-checkin", requireAuth, requireStudent, asyncHandler(async (req: Request, res: Response) => {
+  const bookingId = req.params.id;
+  const studentId = req.user!.id;
+
+  // 1. Verify the event exists and is approved/active
+  const booking = await db.query.bookings.findFirst({
+    where: eq(bookings.id, bookingId),
+    with: { lab: true, registrations: true }
+  });
+
+  if (!booking || (booking.status !== "approved" && booking.status !== "active")) {
+    res.status(404).json({ error: "Event not found or is not currently accepting attendees." });
+    return;
+  }
+
+  // Check if 3 hours have passed since the scheduled end time
+  const scheduledEnd = new Date(booking.scheduledEnd);
+  const now = new Date();
+  const threeHoursInMs = 3 * 60 * 60 * 1000;
+  
+  if (now.getTime() > scheduledEnd.getTime() + threeHoursInMs) {
+    res.status(403).json({ error: "Attendance window closed. It has been more than 3 hours since the event ended." });
+    return;
+  }
+
+  // 2. Prevent the organizer from self-checking into their own event
+  if (booking.studentId === studentId) {
+    res.status(400).json({ error: "You are the organizer of this event and cannot register as an attendee." });
+    return;
+  }
+
+  // 3. Check capacity
+  const currentAttendees = (booking.registrations as any[]).length;
+  if (currentAttendees >= booking.expectedAttendees) {
+    res.status(409).json({ error: "This event has reached its maximum capacity." });
+    return;
+  }
+
+  // 4. Find or create the registration
+  let reg = await db.query.registrations.findFirst({
+    where: and(
+      eq(registrations.bookingId, bookingId),
+      eq(registrations.studentId, studentId)
+    )
+  });
+
+  if (!reg) {
+    // Guest is new — create registration
+    const [newReg] = await db.insert(registrations).values({
+      bookingId,
+      studentId,
+      status: "registered",
+    }).returning();
+    reg = newReg;
+  }
+
+  // 5. If already attended — idempotent, just return success
+  if (reg.status === "attended") {
+    res.json({
+      message: "You are already checked in!",
+      alreadyAttended: true,
+      registration: reg
+    });
+    return;
+  }
+
+  // 6. Mark as attended
+  const [updatedReg] = await db
+    .update(registrations)
+    .set({
+      status: "attended",
+      checkInTime: new Date(),
+      updatedAt: new Date()
+    })
+    .where(eq(registrations.id, reg.id))
+    .returning();
+
+  res.json({
+    message: "Self check-in successful! Your attendance has been recorded.",
+    alreadyAttended: false,
+    registration: updatedReg,
+    eventTitle: booking.title,
+    labName: (booking as any).lab?.name
+  });
+}));
+
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // POST /api/bookings/:id/conclude

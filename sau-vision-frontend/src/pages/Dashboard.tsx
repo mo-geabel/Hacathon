@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import ChatWindow from '../components/chatbot/ChatWindow';
 import DensityGrid from '../components/map/DensityGrid';
+import EventQrModal from '../components/events/EventQrModal';
 import BookingFormModal from '../components/map/BookingFormModal';
 import {
   LayoutDashboard, UserCircle, Map, LogOut,
@@ -13,13 +14,14 @@ import { Link, useNavigate } from 'react-router-dom';
 import type { Booking, Room } from '../types';
 import api from '../lib/api';
 
-type ActiveView = 'booking' | 'browse' | 'profile' | 'history';
+type ActiveView = 'booking' | 'browse' | 'profile' | 'history' | 'my-events';
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [activeView, setActiveView] = useState<ActiveView>('booking');
   const [myBookings, setMyBookings] = useState<Booking[]>([]);
+  const [myRegistrations, setMyRegistrations] = useState<any[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -28,6 +30,7 @@ export default function Dashboard() {
   const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
   const [commentingBookingId, setCommentingBookingId] = useState<string | null>(null);
   const [commentText, setCommentText] = useState('');
+  const [qrModalEvent, setQrModalEvent] = useState<{ bookingId: string; title: string; labName?: string; scheduledStart?: string } | null>(null);
 
   // Function to refresh bookings
   const fetchBookings = async () => {
@@ -87,8 +90,20 @@ export default function Dashboard() {
     }
   };
 
+  const fetchRegistrations = async () => {
+    try {
+      const response = await api.get('/registrations/my');
+      setMyRegistrations(response.data);
+    } catch (err) {
+      console.error('Failed to fetch registrations', err);
+    }
+  };
+
   useEffect(() => {
-    if (user?.id) fetchBookings();
+    if (user?.id) {
+      fetchBookings();
+      fetchRegistrations();
+    }
   }, [user]);
 
   // Fetch rooms for manual browsing when the 'browse' tab is active
@@ -135,6 +150,7 @@ export default function Dashboard() {
     { id: 'browse' as ActiveView, label: 'Browse Rooms', icon: Grid },
     { id: 'profile' as ActiveView, label: 'Profile & Settings', icon: UserCircle },
     { id: 'history' as ActiveView, label: 'My History', icon: BookOpen },
+    { id: 'my-events' as ActiveView, label: 'My Events', icon: CalendarCheck },
   ];
 
   const statusStyle = (status: string) => {
@@ -182,6 +198,14 @@ export default function Dashboard() {
               {label}
             </button>
           ))}
+
+          <Link
+            to="/events"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-all duration-200"
+          >
+            <CalendarCheck className="w-4 h-4 shrink-0" />
+            Events Dashboard
+          </Link>
 
           <Link
             to="/map"
@@ -420,12 +444,32 @@ export default function Dashboard() {
                       </div>
                       {isApproved && (
                         <div className="flex flex-col gap-2 mb-3">
-                          <Link
-                            to={`/booking/${booking.id}/checkin`}
-                            className="w-full btn-primary py-2 px-4 text-sm flex items-center justify-center gap-2"
-                          >
-                            <QrCode className="w-4 h-4" /> View Check-In QR
-                          </Link>
+                          {(() => {
+                            const [hours, minutes] = booking.time.split(':').map(Number);
+                            const start = new Date(booking.date);
+                            start.setHours(hours, minutes, 0, 0);
+                            const end = new Date(start.getTime() + booking.duration * 60000);
+                            const now = new Date();
+                            const isExpired = now.getTime() > end.getTime() + 3 * 60 * 60 * 1000;
+                            
+                            return isExpired ? (
+                              <div className="w-full bg-red-500/10 border border-red-500/20 text-red-400 py-2 px-4 text-sm text-center rounded-lg">
+                                Attendance Window Closed
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => setQrModalEvent({
+                                  bookingId: booking.id,
+                                  title: booking.title || booking.roomName || '',
+                                  labName: booking.roomName,
+                                  scheduledStart: `${booking.date}T${booking.time}`
+                                })}
+                                className="w-full btn-primary py-2 px-4 text-sm flex items-center justify-center gap-2"
+                              >
+                                <QrCode className="w-4 h-4" /> Show Event QR Code
+                              </button>
+                            );
+                          })()}
                           
                           {commentingBookingId === booking.id ? (
                             <div className="flex flex-col gap-2 mt-2">
@@ -485,7 +529,101 @@ export default function Dashboard() {
             )}
           </div>
         )}
+
+        {/* MY EVENTS VIEW */}
+        {activeView === 'my-events' && (
+          <div className="p-8 max-w-4xl">
+            <h1 className="text-2xl font-bold text-white mb-6">Events I'm Attending</h1>
+
+            {myRegistrations.length === 0 ? (
+              <div className="glass-card p-10 text-center text-gray-400">
+                You haven't joined any events yet. <Link to="/events" className="text-electric-400 hover:underline">Browse Events</Link>.
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {myRegistrations.map((reg: any) => {
+                  const event = reg.booking;
+                  const startDate = new Date(event.scheduledStart);
+                  
+                  return (
+                    <div key={reg.id} className="glass-card p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="text-lg font-bold text-white">{event.title}</h3>
+                          <span className={`text-[10px] uppercase px-2 py-0.5 rounded-full border ${
+                            reg.status === 'attended' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' :
+                            reg.status === 'registered' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' :
+                            'bg-red-500/20 text-red-400 border-red-500/30'
+                          }`}>
+                            {reg.status}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-400 flex items-center gap-2 mb-3">
+                          <MapPin className="w-4 h-4 text-electric-400" />
+                          {event.lab.name} ({event.lab.faculty.name})
+                        </p>
+                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                          <div className="flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5" />
+                            {startDate.toLocaleDateString()} at {startDate.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <UserCircle className="w-3.5 h-3.5" />
+                            Organizer: {event.organizer.fullName}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="shrink-0 flex flex-col items-center gap-3 border-t md:border-t-0 md:border-l border-white/10 pt-4 md:pt-0 md:pl-6 min-w-[120px]">
+                        {/* Guests never show a QR — the host displays the event QR at the door */}
+                        {reg.status === 'attended' ? (
+                          <div className="text-sm text-center">
+                            <div className="font-bold text-emerald-400 mb-1 flex items-center gap-1.5">
+                              <CheckCircle2 className="w-4 h-4" /> Attended
+                            </div>
+                            {reg.checkInTime && (
+                              <div className="text-gray-500 text-xs">
+                                Checked in at {new Date(reg.checkInTime).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}
+                              </div>
+                            )}
+                          </div>
+                        ) : reg.status === 'registered' ? (
+                          <div className="text-center">
+                            <div className="w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto mb-2">
+                              <Clock className="w-5 h-5 text-amber-400" />
+                            </div>
+                            <div className="text-xs text-amber-400 font-semibold">Awaiting event</div>
+                            <div className="text-xs text-gray-500 mt-0.5">Host scans you in</div>
+                          </div>
+                        ) : (
+                          <div className="text-xs text-red-400 font-semibold">No Show</div>
+                        )}
+
+                        {reg.certificateData && (
+                          <button className="flex items-center gap-2 btn-primary py-2 px-4 text-xs w-full justify-center mt-2">
+                            <Download className="w-4 h-4" /> Download Certificate
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </main>
+
+      {/* QR Modal */}
+      {qrModalEvent && (
+        <EventQrModal
+          bookingId={qrModalEvent.bookingId}
+          eventTitle={qrModalEvent.title}
+          labName={qrModalEvent.labName}
+          scheduledStart={qrModalEvent.scheduledStart}
+          onClose={() => setQrModalEvent(null)}
+        />
+      )}
 
       {/* Booking Modal */}
       {selectedRoom && (

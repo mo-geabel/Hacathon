@@ -61,6 +61,17 @@ export const bookings = pgTable("bookings", {
 
   status: bookingStatusEnum("status").notNull().default("pending"),
 
+  // ── Event Type ─────────────────────────────────────────────────────────────
+  /**
+   * When true:
+   *  - The event QR code drives a scan-to-join flow (participants scan → register)
+   *  - After the event concludes, puq.ai generates a PDF certificate per attendee
+   * When false:
+   *  - NovaVision camera is used to count occupancy only
+   *  - No certificate is generated
+   */
+  requiresCertificate: boolean("requires_certificate").notNull().default(false),
+
   // ── Communication ────────────────────────────────────────────────────────────
   /** Optional comment added by the student after booking is approved */
   studentComment: text("student_comment"),
@@ -85,14 +96,17 @@ export const bookings = pgTable("bookings", {
   ghostReason: text("ghost_reason"),
 
   // ── puq.ai Post-Event Reports ──────────────────────────────────────────────
-  /** URL to the generated PDF certificate for attendees */
+  /** URL to the generated PDF certificate for attendees (legacy single URL, now per-registration) */
   certificateUrl: text("certificate_url"),
   
   /** URL to the ROI and engagement report */
   roiReportUrl: text("roi_report_url"),
   
-  /** The full JSON response from the puq.ai webhook */
+  /** The full JSON response from the puq.ai report generation */
   puqAiReportPayload: jsonb("puq_ai_report_payload"),
+
+  /** Summary stats stored after conclude: { totalRegistered, attended, noShows, attendanceRate } */
+  eventStats: jsonb("event_stats"),
 
   // ── Timestamps ─────────────────────────────────────────────────────────────
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

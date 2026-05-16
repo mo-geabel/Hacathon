@@ -11,6 +11,38 @@ const asyncHandler = (fn: Function) => (req: Request, res: Response, next: NextF
   Promise.resolve(fn(req, res, next)).catch(next);
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/registrations/my
+// Student fetches their own registrations (joined events)
+// ─────────────────────────────────────────────────────────────────────────────
+router.get("/my", requireAuth, requireStudent, asyncHandler(async (req: Request, res: Response) => {
+  const studentId = req.user!.id;
+
+  const myRegs = await db.query.registrations.findMany({
+    where: eq(registrations.studentId, studentId),
+    with: {
+      booking: {
+        with: {
+          lab: { with: { faculty: true } },
+          student: { columns: { fullName: true } }
+        }
+      }
+    },
+    orderBy: (r, { desc }) => [desc(r.createdAt)]
+  });
+
+  // Flatten organizer name for easy frontend access
+  const formatted = myRegs.map((reg: any) => ({
+    ...reg,
+    booking: {
+      ...reg.booking,
+      organizer: reg.booking?.student,
+    }
+  }));
+
+  res.json(formatted);
+}));
+
 // POST /api/registrations/:bookingId
 // Student registers for an event
 router.post("/:bookingId", requireAuth, requireStudent, asyncHandler(async (req: Request, res: Response) => {
@@ -61,7 +93,7 @@ router.post("/:bookingId", requireAuth, requireStudent, asyncHandler(async (req:
   const [newRegistration] = await db.insert(registrations).values({
     studentId,
     bookingId,
-    status: "pending",
+    status: "registered",
     aiScore: aiEvaluation.aiScore,
     aiRecommendation: aiEvaluation.aiRecommendation
   }).returning();
