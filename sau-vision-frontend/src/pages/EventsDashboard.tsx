@@ -85,12 +85,12 @@ export default function EventsDashboard() {
           </p>
         </div>
 
-        <div className="flex bg-card border border-border p-1 rounded-xl">
+        <div className="flex overflow-x-auto hide-scrollbar bg-card border border-border p-1 rounded-xl w-full md:w-auto">
           {(['all', 'certified', 'joined'] as const).map(f => (
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-5 py-2 rounded-lg text-sm font-medium transition-all capitalize ${
+              className={`px-5 py-2 rounded-lg text-sm font-medium transition-all capitalize whitespace-nowrap shrink-0 ${
                 filter === f 
                   ? f === 'certified' 
                     ? 'bg-amber-500/20 text-amber-400' 

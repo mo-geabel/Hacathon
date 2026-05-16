@@ -68,7 +68,7 @@ export default function EventFeedback() {
   // ── Already submitted ─────────────────────────────────────────────────────
   if (status === 'already-submitted') {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center animate-fade-in">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-6 sm:p-6 text-center animate-fade-in">
         <div className="w-20 h-20 bg-blue-500/10 rounded-full flex items-center justify-center mb-6 border border-blue-500/20">
           <CheckCircle2 className="w-10 h-10 text-blue-400" />
         </div>
@@ -84,7 +84,7 @@ export default function EventFeedback() {
   // ── Error ─────────────────────────────────────────────────────────────────
   if (status === 'error') {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center animate-fade-in">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-6 sm:p-6 text-center animate-fade-in">
         <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mb-6 border border-red-500/20">
           <ShieldAlert className="w-10 h-10 text-red-400" />
         </div>
@@ -113,7 +113,7 @@ export default function EventFeedback() {
   if (status === 'done') {
     const starCount = score !== null ? Math.round(score / 20) : 0;
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center animate-fade-in">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-6 sm:p-6 text-center animate-fade-in">
         <div className="relative mb-8">
           <div className="absolute inset-0 bg-emerald-500 blur-[40px] opacity-20 rounded-full" />
           <div className="w-24 h-24 bg-emerald-500/10 rounded-full flex items-center justify-center relative border border-emerald-500/30">
@@ -150,7 +150,7 @@ export default function EventFeedback() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
-      <div className="bg-white dark:bg-[#0a1322]/80 backdrop-blur-xl border-b border-slate-200 dark:border-white/5 px-6 py-5">
+      <div className="bg-white dark:bg-[#0a1322]/80 backdrop-blur-xl border-b border-slate-200 dark:border-white/5 px-4 sm:px-6 py-5">
         <div className="max-w-2xl mx-auto flex items-center gap-4">
           <button
             onClick={() => navigate(-1)}

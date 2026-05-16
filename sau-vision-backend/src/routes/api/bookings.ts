@@ -37,7 +37,7 @@ router.get("/", requireAuth, asyncHandler(async (req: Request, res: Response) =>
     return bookingsList.sort((a, b) => {
       const scoreA = calculateScore(a.student);
       const scoreB = calculateScore(b.student);
-      
+
       if (scoreB !== scoreA) return scoreB - scoreA;
       return a.createdAt.getTime() - b.createdAt.getTime();
     });
@@ -107,7 +107,7 @@ router.get("/", requireAuth, asyncHandler(async (req: Request, res: Response) =>
 // ─────────────────────────────────────────────────────────────────────────────
 router.get("/events", requireAuth, requireStudent, asyncHandler(async (req: Request, res: Response) => {
   const studentId = req.user!.id;
-  
+
   const allEvents = await db.query.bookings.findMany({
     where: and(
       or(eq(bookings.status, "approved"), eq(bookings.status, "active")),
@@ -125,7 +125,7 @@ router.get("/events", requireAuth, requireStudent, asyncHandler(async (req: Requ
 
   const formattedEvents = allEvents.map((event) => {
     const isRegistered = event.registrations.some((r: any) => r.studentId === studentId);
-    
+
     return {
       id: event.id,
       title: event.title,
@@ -250,7 +250,7 @@ router.post("/", requireAuth, requireStudent, asyncHandler(async (req: Request, 
 
   if (conflict) {
     const conflictStart = conflict.scheduledStart.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    const conflictEnd   = conflict.scheduledEnd.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const conflictEnd = conflict.scheduledEnd.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     res.status(409).json({
       error: `This lab is already booked from ${conflictStart} to ${conflictEnd}. Please choose a different time slot.`,
       conflict: {
@@ -314,7 +314,7 @@ router.post("/parse", requireAuth, requireStudent, asyncHandler(async (req: Requ
   let availableLabs = candidateLabs;
   if (scheduledStart && scheduledEnd) {
     const start = new Date(scheduledStart);
-    const end   = new Date(scheduledEnd);
+    const end = new Date(scheduledEnd);
     if (!isNaN(start.getTime()) && !isNaN(end.getTime()) && end > start) {
       const blockedBookings = await db.query.bookings.findMany({
         where: or(
@@ -400,7 +400,7 @@ If no lab matches, return an empty "suggestions" array and explain in "bookingDe
 
     const result = await geminiModel.generateContent(aiPrompt);
     let responseText = result.response.text();
-    
+
     // Strip markdown code fences if Gemini wraps the JSON in them (defensive)
     responseText = responseText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
 
@@ -598,7 +598,7 @@ router.patch("/:id", requireAuth, requireStudent, asyncHandler(async (req: Reque
 
       if (conflict) {
         const conflictStart = conflict.scheduledStart.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-        const conflictEnd   = conflict.scheduledEnd.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        const conflictEnd = conflict.scheduledEnd.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
         res.status(409).json({
           error: `This lab is already booked from ${conflictStart} to ${conflictEnd}. Please choose a different time slot.`,
           conflict: {
@@ -673,7 +673,7 @@ router.patch("/:id/status", requireAuth, requireAdmin, asyncHandler(async (req: 
 
     if (conflict) {
       const conflictStart = conflict.scheduledStart.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-      const conflictEnd   = conflict.scheduledEnd.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      const conflictEnd = conflict.scheduledEnd.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
       res.status(409).json({
         error: `Cannot approve: This lab is already booked from ${conflictStart} to ${conflictEnd}.`,
         conflict: {
@@ -801,7 +801,7 @@ router.post("/checkin", requireAuth, asyncHandler(async (req: Request, res: Resp
   const scheduledEnd = new Date(reg.booking.scheduledEnd);
   const now = new Date();
   const threeHoursInMs = 3 * 60 * 60 * 1000;
-  
+
   if (now.getTime() > scheduledEnd.getTime() + threeHoursInMs) {
     res.status(403).json({ error: "Attendance window closed. It has been more than 3 hours since the event ended." });
     return;
@@ -847,7 +847,7 @@ router.post("/:id/self-checkin", requireAuth, requireStudent, asyncHandler(async
   const scheduledEnd = new Date(booking.scheduledEnd);
   const now = new Date();
   const threeHoursInMs = 3 * 60 * 60 * 1000;
-  
+
   if (now.getTime() > scheduledEnd.getTime() + threeHoursInMs) {
     res.status(403).json({ error: "Attendance window closed. It has been more than 3 hours since the event ended." });
     return;
@@ -927,7 +927,22 @@ router.post("/:id/conclude", requireAuth, requireStudent, asyncHandler(async (re
 
   const booking = await db.query.bookings.findFirst({
     where: eq(bookings.id, bookingId),
-    with: { registrations: true }
+    with: {
+      registrations: true,
+      student: { columns: { fullName: true, email: true } },
+      lab: {
+        with: {
+          faculty: {
+            with: {
+              admins: {
+                columns: { fullName: true, email: true, jobTitle: true },
+                where: (a: any, { eq: eqFn }: any) => eqFn(a.isActive, true),
+              },
+            },
+          },
+        },
+      },
+    }
   });
 
   if (!booking) {
@@ -990,13 +1005,116 @@ router.post("/:id/conclude", requireAuth, requireStudent, asyncHandler(async (re
     .where(eq(bookings.id, booking.id))
     .returning();
 
+  // 4. Send certificate webhooks to puq.ai for all attendees
+  const attendedRegistrations = await db.query.registrations.findMany({
+    where: and(
+      eq(registrations.bookingId, booking.id),
+      eq(registrations.status, "attended")
+    ),
+    with: {
+      student: { columns: { fullName: true, email: true } }
+    }
+  });
+
+  const PUQ_WEBHOOK = "https://api.puq.ai/h/570e414d8707/sync";
+
+  // Format the event date in Turkish locale (e.g. "16 Mayıs 2026")
+  const eventDate = new Date(booking.scheduledStart).toLocaleDateString("tr-TR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
+  // Fire-and-forget: send one webhook per attendee sequentially,
+  // with a 10-second gap between each so puq.ai receives one object at a time.
+  // Runs in the background — does NOT block the HTTP response.
+  (async () => {
+    const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+    for (let i = 0; i < attendedRegistrations.length; i++) {
+      const reg = attendedRegistrations[i];
+      const payload = {
+        participant_name: (reg as any).student?.fullName || "Unknown",
+        event_date: eventDate,
+        event_name: booking.title,
+        participant_email: (reg as any).student?.email || "",
+        organizer_name: (booking as any).student?.fullName || "Unknown Organizer",
+      };
+
+      try {
+        await axios.post(PUQ_WEBHOOK, payload, {
+          headers: { "Content-Type": "application/json" },
+          timeout: 8000,
+        });
+        console.log(`✅ [${i + 1}/${attendedRegistrations.length}] puq.ai certificate sent for: ${payload.participant_email}`);
+      } catch (err: any) {
+        console.error(`❌ [${i + 1}/${attendedRegistrations.length}] puq.ai webhook failed for ${payload.participant_email}:`, err.message);
+      }
+
+      // Wait 10 seconds before sending the next one (skip after the last)
+      if (i < attendedRegistrations.length - 1) {
+        await sleep(10000);
+      }
+    }
+
+    console.log(`🏁 puq.ai certificate loop complete. ${attendedRegistrations.length} certificate(s) processed.`);
+  })();
+
+  // 5. Send admin event-report to puq.ai (fire-and-forget, non-blocking)
+  //    One single payload with full event statistics for the lab admin
+  (async () => {
+    const PUQ_ADMIN_WEBHOOK = "https://api.puq.ai/h/584d68b66834/sync";
+    const lab = (booking as any).lab;
+    const faculty = lab?.faculty;
+    const adminsList: { fullName: string; email: string; jobTitle?: string }[] = faculty?.admins ?? [];
+
+    const attendeeNames = attendedRegistrations.map((r: any) => r.student?.fullName || "Unknown");
+    const noShowNames   = noShows.map((r: any) => r.studentId); // IDs only (names not loaded here)
+
+    const reportPayload = {
+      report_type:         "event_summary",
+      event_name:          booking.title,
+      event_description:   booking.description ?? "",
+      event_date:          new Date(booking.scheduledStart).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" }),
+      event_start_time:    new Date(booking.scheduledStart).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }),
+      event_end_time:      new Date(booking.scheduledEnd).toLocaleTimeString("tr-TR",   { hour: "2-digit", minute: "2-digit" }),
+      organizer_name:      (booking as any).student?.fullName ?? "Unknown",
+      organizer_email:     (booking as any).student?.email    ?? "",
+      lab_name:            lab?.name       ?? "Unknown Lab",
+      lab_room:            lab?.roomNumber ?? "N/A",
+      lab_floor:           lab != null ? `Floor ${lab.floor}` : "N/A",
+      faculty_name:        faculty?.name   ?? "Unknown Faculty",
+      responsible_admins:  adminsList.map((a) => `${a.fullName} (${a.email})`).join(", ") || "N/A",
+      expected_attendees:  booking.expectedAttendees,
+      actual_attendees:    attendedRegistrations.length,
+      no_shows:            noShows.length,
+      attendance_rate:     booking.expectedAttendees > 0
+                             ? `${Math.round((attendedRegistrations.length / booking.expectedAttendees) * 100)}%`
+                             : "N/A",
+      attendee_list:       attendeeNames.join(", ") || "None",
+      concluded_at:        new Date().toISOString(),
+    };
+
+    console.log("📊 Sending admin event report to puq.ai...");
+    try {
+      await axios.post(PUQ_ADMIN_WEBHOOK, reportPayload, {
+        headers: { "Content-Type": "application/json" },
+        timeout: 8000,
+      });
+      console.log("✅ Admin event report sent successfully.");
+    } catch (err: any) {
+      console.error("❌ Admin report webhook failed:", err.message);
+    }
+  })();
+
   res.json({
     message: "Event successfully concluded.",
     booking: completedBooking,
     stats: {
       totalRegistrations: booking.registrations.length,
       attended: booking.registrations.length - noShows.length,
-      noShowsPunished: noShows.length
+      noShowsPunished: noShows.length,
+      certificatesSent: attendedRegistrations.length,
     }
   });
 }));
