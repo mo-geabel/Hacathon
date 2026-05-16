@@ -91,6 +91,7 @@ const getRoomIcon = (color: string, isActive: boolean) => {
 interface CampusImageMapProps {
   enableEventMode: boolean;
   rooms?: Room[];
+  searchQuery?: string;
   selectedFacultyId?: string | null;
   onFacultySelect?: (facultyId: string) => void;
   onClearFaculty?: () => void;
@@ -100,6 +101,7 @@ interface CampusImageMapProps {
 export default function CampusImageMap({ 
   enableEventMode, 
   rooms = [], 
+  searchQuery = '',
   selectedFacultyId,
   onFacultySelect,
   onClearFaculty,
@@ -135,6 +137,20 @@ export default function CampusImageMap({
       return f;
     });
   }, [rooms]);
+
+  // Filter visible faculties by the search query
+  const visibleFaculties = React.useMemo(() => {
+    if (!searchQuery.trim()) return faculties;
+    const q = searchQuery.toLowerCase();
+    return faculties.filter(f =>
+      f.name.toLowerCase().includes(q) ||
+      f.rooms.some(r =>
+        r.name.toLowerCase().includes(q) ||
+        r.location.toLowerCase().includes(q) ||
+        r.hardware.some(hw => hw.toLowerCase().includes(q))
+      )
+    );
+  }, [faculties, searchQuery]);
 
   // Fetch events from backend on mount
   useEffect(() => {
@@ -274,7 +290,7 @@ export default function CampusImageMap({
         ))}
 
         {/* Faculty markers */}
-        {!selectedFacultyId && faculties.map((faculty) => {
+        {!selectedFacultyId && visibleFaculties.map((faculty) => {
           const color = getOccupancyColor(faculty.avgOccupancy);
           return (
             <Marker

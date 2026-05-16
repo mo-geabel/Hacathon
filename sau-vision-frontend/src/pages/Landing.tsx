@@ -105,10 +105,7 @@ export default function Landing() {
         {/* Hero Content */}
         <div className="relative z-30 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
 
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-electric-500/20 border border-electric-500/30 text-electric-300 text-sm font-medium mb-8 animate-fade-in backdrop-blur-sm">
-            <Sparkles className="w-4 h-4" />
-            <span>Next-Gen Facility Management</span>
-          </div>
+
 
           <h1 className="text-5xl md:text-7xl font-extrabold text-white tracking-tight mb-8 animate-slide-up drop-shadow-2xl text-balance">
             Smart Campus, <br className="hidden md:block" />
@@ -149,11 +146,10 @@ export default function Landing() {
             <button
               key={i}
               onClick={() => goToSlide(i)}
-              className={`transition-all duration-300 rounded-full ${
-                i === currentSlide
-                  ? 'w-8 h-2 bg-electric-400'
-                  : 'w-2 h-2 bg-white/30 hover:bg-white/60'
-              }`}
+              className={`transition-all duration-300 rounded-full ${i === currentSlide
+                ? 'w-8 h-2 bg-electric-400'
+                : 'w-2 h-2 bg-white/30 hover:bg-white/60'
+                }`}
             />
           ))}
         </div>

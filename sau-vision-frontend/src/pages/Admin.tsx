@@ -21,7 +21,7 @@ export default function Admin() {
     const fetchBookings = async () => {
       try {
         const response = await api.get('/bookings');
-        
+
         const mapped: Booking[] = response.data.map((b: any) => {
           const startDate = new Date(b.scheduledStart);
           const endDate = new Date(b.scheduledEnd);
@@ -38,6 +38,8 @@ export default function Admin() {
             roomLocation: b.lab ? `Floor ${b.lab.floor}, Room ${b.lab.roomNumber}` : 'Unknown Location',
             date: dateStr,
             time: timeStr,
+            scheduledStart: b.scheduledStart,
+            scheduledEnd: b.scheduledEnd,
             duration,
             status: b.status,
             title: b.title,
@@ -69,7 +71,7 @@ export default function Admin() {
   const handleApprove = async (id: string) => {
     try {
       await api.patch(`/bookings/${id}/status`, { status: 'approved' });
-      setBookings(prev => prev.map(b => 
+      setBookings(prev => prev.map(b =>
         b.id === id ? { ...b, status: 'approved', qrToken: `live-qr-${Date.now()}` } : b
       ));
       addToast('Booking approved successfully', 'success');
@@ -82,7 +84,7 @@ export default function Admin() {
   const handleReject = async (id: string) => {
     try {
       await api.patch(`/bookings/${id}/status`, { status: 'rejected' });
-      setBookings(prev => prev.map(b => 
+      setBookings(prev => prev.map(b =>
         b.id === id ? { ...b, status: 'rejected' } : b
       ));
       addToast('Booking rejected', 'info');
@@ -102,7 +104,7 @@ export default function Admin() {
   return (
     <div className="min-h-screen bg-background pt-24 pb-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        
+
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
           <div>
@@ -112,16 +114,10 @@ export default function Admin() {
             </h1>
             <p className="text-slate-500 dark:text-gray-400 mt-2">Welcome back, {user?.name}</p>
           </div>
-
-          <div className="flex items-center gap-4">
-            <Link to="/map" className="btn-ghost flex items-center gap-2">
-              <LayoutDashboard className="w-4 h-4" /> Live Map
-            </Link>
-          </div>
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex overflow-x-auto hide-scrollbar border-b border-white/10 mb-8">
+        <div className="flex overflow-x-auto hide-scrollbar border-b border-slate-200 dark:border-white/10 mb-8">
           <div className="flex gap-8 px-2">
             {tabs.map((tab) => {
               const Icon = tab.icon;
@@ -131,16 +127,16 @@ export default function Admin() {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
                   className={`flex items-center gap-2 py-4 px-2 border-b-2 font-medium transition-colors whitespace-nowrap
-                    ${isActive 
-                      ? 'border-electric-500 text-electric-400' 
-                      : 'border-transparent text-gray-400 hover:text-white hover:border-white/20'
+                    ${isActive
+                      ? 'border-electric-500 text-electric-400'
+                      : 'border-transparent text-slate-500 dark:text-gray-400 hover:text-foreground hover:border-slate-300 dark:hover:border-white/20'
                     }`}
                 >
                   <Icon className="w-4 h-4" />
                   {tab.label}
                   {'badge' in tab && tab.badge !== undefined && tab.badge > 0 && (
                     <span className={`ml-2 px-2 py-0.5 rounded-full text-xs
-                      ${isActive ? 'bg-electric-500/20 text-electric-400' : 'bg-white/10 text-gray-300'}`}>
+                      ${isActive ? 'bg-electric-500/20 text-electric-400' : 'bg-slate-200 text-slate-600 dark:bg-white/10 dark:text-gray-300'}`}>
                       {tab.badge}
                     </span>
                   )}
@@ -159,7 +155,7 @@ export default function Admin() {
               {activeTab === 'overview' && (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                   {/* Quick Stats */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                     <div className="glass-card p-6 border-l-4 border-l-amber-500">
                       <div className="text-sm text-slate-500 dark:text-gray-400 mb-1">Pending Requests</div>
                       <div className="text-3xl font-bold text-foreground">{pendingBookings.length}</div>
@@ -168,15 +164,11 @@ export default function Admin() {
                       <div className="text-sm text-slate-500 dark:text-gray-400 mb-1">Active Sessions</div>
                       <div className="text-3xl font-bold text-foreground">{activeBookings.length}</div>
                     </div>
-                    <div className="glass-card p-6 border-l-4 border-l-electric-500">
-                      <div className="text-sm text-slate-500 dark:text-gray-400 mb-1">System Efficiency</div>
-                      <div className="text-3xl font-bold text-foreground">94%</div>
-                    </div>
                   </div>
 
                   {/* Two Column Layout */}
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    
+
                     {/* Main Approval Queue (Takes 2/3 width) */}
                     <div className="lg:col-span-2 space-y-6">
                       <div className="flex items-center justify-between">
@@ -185,9 +177,9 @@ export default function Admin() {
                           Pending Approvals
                         </h2>
                       </div>
-                      
-                      <ApprovalTable 
-                        bookings={pendingBookings} 
+
+                      <ApprovalTable
+                        bookings={pendingBookings}
                         onApprove={handleApprove}
                         onReject={handleReject}
                       />
@@ -205,23 +197,23 @@ export default function Admin() {
                       <div className="glass-card p-1">
                         <div className="divide-y divide-white/5">
                           {bookings.filter(b => b.status === 'completed').slice(0, 1).map(booking => (
-                              <Link 
-                                key={booking.id} 
-                                to={`/admin/reports/${booking.id}`}
-                                className="block p-4 hover:bg-white/[0.02] transition-colors"
-                              >
-                                <div className="flex justify-between items-start mb-1">
-                                  <div className="font-medium text-foreground text-sm">{booking.roomName}</div>
-                                  <span className="text-[10px] uppercase px-2 py-0.5 rounded-full bg-electric-500/20 text-electric-400 border border-electric-500/30">
-                                    Ready
-                                  </span>
-                                </div>
-                                <div className="text-xs text-slate-500 dark:text-gray-400">
-                                  {booking.date} • {booking.time} ({booking.duration}m)
-                                </div>
-                              </Link>
+                            <Link
+                              key={booking.id}
+                              to={`/admin/reports/${booking.id}`}
+                              className="block p-4 hover:bg-white/[0.02] transition-colors"
+                            >
+                              <div className="flex justify-between items-start mb-1">
+                                <div className="font-medium text-foreground text-sm">{booking.roomName}</div>
+                                <span className="text-[10px] uppercase px-2 py-0.5 rounded-full bg-electric-500/20 text-electric-400 border border-electric-500/30">
+                                  Ready
+                                </span>
+                              </div>
+                              <div className="text-xs text-slate-500 dark:text-gray-400">
+                                {booking.date} • {booking.time} ({booking.duration}m)
+                              </div>
+                            </Link>
                           ))}
-                          
+
                           {/* Dummy placeholders to fill space */}
                           <div className="p-4 opacity-50">
                             <div className="flex justify-between items-start mb-1">
@@ -238,8 +230,8 @@ export default function Admin() {
 
               {activeTab === 'approvals' && (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <ApprovalTable 
-                    bookings={pendingBookings} 
+                  <ApprovalTable
+                    bookings={pendingBookings}
                     onApprove={handleApprove}
                     onReject={handleReject}
                   />

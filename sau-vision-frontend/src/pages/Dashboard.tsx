@@ -4,15 +4,14 @@ import ChatWindow from '../components/chatbot/ChatWindow';
 import DensityGrid from '../components/map/DensityGrid';
 import EventQrModal from '../components/events/EventQrModal';
 import BookingFormModal from '../components/map/BookingFormModal';
+import AppSidebar from '../components/shared/AppSidebar';
 import {
-  LayoutDashboard, UserCircle, Map, LogOut,
   Clock, QrCode, CheckCircle2, MapPin, ChevronRight,
   CalendarCheck, ShieldCheck, Zap, Bell, HelpCircle,
-  Download, BookOpen, Grid, Search, Menu, X
+  Download, BookOpen, Grid, Search, LayoutDashboard, UserCircle
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import type { Booking, Room } from '../types';
-import { ThemeToggle } from '../components/ThemeToggle';
 import api from '../lib/api';
 
 type ActiveView = 'booking' | 'browse' | 'profile' | 'history' | 'my-events';
@@ -21,7 +20,6 @@ export default function Dashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [activeView, setActiveView] = useState<ActiveView>('booking');
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [myBookings, setMyBookings] = useState<Booking[]>([]);
   const [myRegistrations, setMyRegistrations] = useState<any[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -165,106 +163,12 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-slate-100 dark:bg-navy-900 flex flex-col md:flex-row">
-      
-      {/* ─── MOBILE HEADER ─── */}
-      <div className="md:hidden flex items-center justify-between p-4 bg-white dark:bg-navy-800 border-b border-border z-40 sticky top-0">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-electric-500 to-blue-600 flex items-center justify-center text-foreground font-bold text-xs shadow">
-            {initials}
-          </div>
-          <span className="font-semibold text-foreground text-sm">Dashboard</span>
-        </div>
-        <button 
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="p-2 text-slate-500 hover:text-foreground transition-colors"
-        >
-          {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </button>
-      </div>
 
-      {/* ─── SIDEBAR ─── */}
-      {/* Mobile Overlay */}
-      {isMobileMenuOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-40 md:hidden" 
-          onClick={() => setIsMobileMenuOpen(false)} 
-        />
-      )}
-      
-      <aside className={`
-        fixed md:sticky top-0 left-0 h-screen w-64 shrink-0 
-        bg-white dark:bg-navy-800/95 backdrop-blur-md border-r border-slate-200 dark:border-white/5 
-        flex flex-col z-50 transition-transform duration-300 ease-in-out
-        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-      `}>
-        {/* Profile Card */}
-        <div className="p-6 border-b border-slate-200 dark:border-white/5">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-electric-500 to-blue-600 flex items-center justify-center text-foreground font-bold text-lg shadow-lg">
-              {initials}
-            </div>
-            <div className="overflow-hidden">
-              <p className="font-semibold text-foreground truncate">{user?.name || 'Student'}</p>
-              <p className="text-xs text-slate-500 dark:text-gray-400 truncate">{user?.email}</p>
-            </div>
-            <div className="ml-auto">
-              <ThemeToggle />
-            </div>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-gray-500">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            Active Student
-          </div>
-        </div>
-
-        {/* Nav Links */}
-        <nav className="flex-1 p-3 space-y-1">
-          {navItems.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              onClick={() => {
-                setActiveView(id);
-                setIsMobileMenuOpen(false);
-              }}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-                activeView === id
-                  ? 'bg-electric-500/15 text-electric-400 border border-electric-500/20'
-                  : 'text-slate-500 dark:text-gray-400 hover:text-foreground hover:bg-slate-100 dark:bg-white/5'
-              }`}
-            >
-              <Icon className="w-4 h-4 shrink-0" />
-              {label}
-            </button>
-          ))}
-
-          <Link
-            to="/events"
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-500 dark:text-gray-400 hover:text-foreground hover:bg-slate-100 dark:bg-white/5 transition-all duration-200"
-          >
-            <CalendarCheck className="w-4 h-4 shrink-0" />
-            Events Dashboard
-          </Link>
-
-          <Link
-            to="/map"
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-500 dark:text-gray-400 hover:text-foreground hover:bg-slate-100 dark:bg-white/5 transition-all duration-200"
-          >
-            <Map className="w-4 h-4 shrink-0" />
-            Campus Map
-          </Link>
-        </nav>
-
-        {/* Sign Out */}
-        <div className="p-3 border-t border-slate-200 dark:border-white/5">
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all duration-200"
-          >
-            <LogOut className="w-4 h-4 shrink-0" />
-            Sign Out
-          </button>
-        </div>
-      </aside>
+      {/* ─── SHARED SIDEBAR ─── */}
+      <AppSidebar
+        activeView={activeView}
+        onNavClick={(id) => setActiveView(id as ActiveView)}
+      />
 
       {/* ─── MAIN CONTENT ─── */}
       <main className="flex-1 overflow-y-auto">
@@ -318,7 +222,7 @@ export default function Dashboard() {
 
         {/* PROFILE & SETTINGS VIEW */}
         {activeView === 'profile' && (
-          <div className="p-8 max-w-3xl">
+          <div className="p-8 w-full">
             <div className="mb-2 text-xs text-slate-400 dark:text-gray-500 uppercase tracking-widest">Overview</div>
             <div className="flex items-center justify-between mb-6">
               <h1 className="text-2xl font-bold text-foreground">Dashboard at a Glance</h1>
@@ -418,7 +322,7 @@ export default function Dashboard() {
               <div className="text-center py-12 text-slate-500 dark:text-gray-400">Loading rooms...</div>
             ) : (
               <DensityGrid
-                rooms={rooms.filter(r => 
+                rooms={rooms.filter(r =>
                   r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                   r.hardware.some(hw => hw.toLowerCase().includes(searchQuery.toLowerCase())) ||
                   r.location.toLowerCase().includes(searchQuery.toLowerCase())
@@ -431,7 +335,7 @@ export default function Dashboard() {
 
         {/* BOOKING HISTORY VIEW */}
         {activeView === 'history' && (
-          <div className="p-8 max-w-3xl">
+          <div className="p-8 w-full">
             <button
               onClick={() => setActiveView('profile')}
               className="flex items-center gap-2 text-sm text-slate-500 dark:text-gray-400 hover:text-foreground transition-colors mb-6"
@@ -489,7 +393,7 @@ export default function Dashboard() {
                             const end = new Date(start.getTime() + booking.duration * 60000);
                             const now = new Date();
                             const isExpired = now.getTime() > end.getTime() + 3 * 60 * 60 * 1000;
-                            
+
                             return isExpired ? (
                               <div className="w-full bg-red-500/10 border border-red-500/20 text-red-400 py-2 px-4 text-sm text-center rounded-lg">
                                 Attendance Window Closed
@@ -508,7 +412,7 @@ export default function Dashboard() {
                               </button>
                             );
                           })()}
-                          
+
                           {commentingBookingId === booking.id ? (
                             <div className="flex flex-col gap-2 mt-2">
                               <textarea
@@ -570,7 +474,7 @@ export default function Dashboard() {
 
         {/* MY EVENTS VIEW */}
         {activeView === 'my-events' && (
-          <div className="p-8 max-w-4xl">
+          <div className="p-8 w-full">
             <h1 className="text-2xl font-bold text-foreground mb-6">Events I'm Attending</h1>
 
             {myRegistrations.length === 0 ? (
@@ -582,17 +486,16 @@ export default function Dashboard() {
                 {myRegistrations.map((reg: any) => {
                   const event = reg.booking;
                   const startDate = new Date(event.scheduledStart);
-                  
+
                   return (
                     <div key={reg.id} className="glass-card p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <h3 className="text-lg font-bold text-foreground">{event.title}</h3>
-                          <span className={`text-[10px] uppercase px-2 py-0.5 rounded-full border ${
-                            reg.status === 'attended' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' :
-                            reg.status === 'registered' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' :
-                            'bg-red-500/20 text-red-400 border-red-500/30'
-                          }`}>
+                          <span className={`text-[10px] uppercase px-2 py-0.5 rounded-full border ${reg.status === 'attended' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' :
+                              reg.status === 'registered' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' :
+                                'bg-red-500/20 text-red-400 border-red-500/30'
+                            }`}>
                             {reg.status}
                           </span>
                         </div>
@@ -603,7 +506,7 @@ export default function Dashboard() {
                         <div className="flex items-center gap-4 text-xs text-slate-400 dark:text-gray-500">
                           <div className="flex items-center gap-1.5">
                             <Clock className="w-3.5 h-3.5" />
-                            {startDate.toLocaleDateString()} at {startDate.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}
+                            {startDate.toLocaleDateString()} at {startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </div>
                           <div className="flex items-center gap-1.5">
                             <UserCircle className="w-3.5 h-3.5" />
@@ -621,7 +524,7 @@ export default function Dashboard() {
                             </div>
                             {reg.checkInTime && (
                               <div className="text-slate-400 dark:text-gray-500 text-xs">
-                                Checked in at {new Date(reg.checkInTime).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}
+                                Checked in at {new Date(reg.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </div>
                             )}
                           </div>

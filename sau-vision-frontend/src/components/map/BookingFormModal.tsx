@@ -209,7 +209,7 @@ export default function BookingFormModal({ lab, existingBooking, onClose, onSucc
       style={{ backdropFilter: 'blur(8px)', backgroundColor: 'rgba(0,0,0,0.7)' }}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="w-full max-w-lg bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-slide-up">
+      <div className="w-full max-w-lg bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-slide-up flex flex-col max-h-[90vh]">
 
         {/* Header */}
         <div className="flex items-start justify-between px-6 py-5 border-b border-slate-200 dark:border-white/5 bg-white/[0.02]">
@@ -245,7 +245,7 @@ export default function BookingFormModal({ lab, existingBooking, onClose, onSucc
             </p>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          <form onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto flex-1">
 
             {/* Error Banner */}
             {error && (
@@ -278,7 +278,7 @@ export default function BookingFormModal({ lab, existingBooking, onClose, onSucc
                 <select
                   value={startTime}
                   onChange={(e) => handleStartTimeChange(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-electric-500"
+                  className="w-full bg-slate-100 dark:bg-white/5 border border-border rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-electric-500"
                 >
                   {timeOptionsWithPast.map(({ time: t, isPast }) => {
                     const taken = isSlotTaken(t);
