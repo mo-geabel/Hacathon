@@ -11,6 +11,8 @@ import Dashboard from '../pages/Dashboard';
 import Admin from '../pages/Admin';
 import CheckIn from '../pages/CheckIn';
 import Report from '../pages/Report';
+import EventsDashboard from '../pages/EventsDashboard';
+import JoinEvent from '../pages/JoinEvent';
 
 // ── Shared Layout with Navbar ─────────────────────────────────────────────────
 const Layout = () => (
@@ -74,6 +76,14 @@ export const router = createBrowserRouter([
 
       // ── Student-only ────────────────────────────────────────────────────────
       {
+        path: '/events',
+        element: (
+          <ProtectedRoute allowedRoles={['student']}>
+            <EventsDashboard />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: '/dashboard',
         element: (
           <ProtectedRoute allowedRoles={['student']}>
@@ -116,6 +126,12 @@ export const router = createBrowserRouter([
   {
     path: '/login',
     element: <Login />,
+  },
+
+  // QR Scan Landing Page (public, handles its own auth redirect)
+  {
+    path: '/join/:bookingId',
+    element: <JoinEvent />,
   },
 
   // Catch-all: any unknown URL → landing

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../lib/api';
 import {
-  X, Calendar, Clock, Users, FileText, Loader2,
+  X, Calendar, Clock, Users, FileText, Loader2, Award,
   CheckCircle2, AlertCircle, ChevronLeft, ChevronRight
 } from 'lucide-react';
 
@@ -26,6 +26,7 @@ interface BookingFormModalProps {
     date: string;
     startTime: string;
     endTime: string;
+    requiresCertificate?: boolean;
   };
   onClose: () => void;
   onSuccess: () => void;
@@ -55,6 +56,7 @@ export default function BookingFormModal({ lab, existingBooking, onClose, onSucc
   const [title, setTitle] = useState(existingBooking?.title || '');
   const [description, setDescription] = useState(existingBooking?.description || '');
   const [attendees, setAttendees] = useState(existingBooking?.expectedAttendees || 1);
+  const [requiresCertificate, setRequiresCertificate] = useState(existingBooking?.requiresCertificate || false);
   const [bookedSlots, setBookedSlots] = useState<TimeSlot[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -110,6 +112,7 @@ export default function BookingFormModal({ lab, existingBooking, onClose, onSucc
         title: title.trim(),
         description: description.trim() || undefined,
         expectedAttendees: attendees,
+        requiresCertificate,
         scheduledStart: toISO(date, startTime),
         scheduledEnd: toISO(date, endTime),
       };
@@ -303,6 +306,27 @@ export default function BookingFormModal({ lab, existingBooking, onClose, onSucc
                 rows={2}
                 className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-electric-500 resize-none"
               />
+            </div>
+
+            {/* Certificate Toggle */}
+            <div 
+              className={`p-3 rounded-lg border transition-colors cursor-pointer flex items-start gap-3 ${requiresCertificate ? 'bg-amber-500/10 border-amber-500/30' : 'bg-white/5 border-white/10 hover:border-white/20'}`}
+              onClick={() => setRequiresCertificate(!requiresCertificate)}
+            >
+              <div className={`p-2 rounded-full ${requiresCertificate ? 'bg-amber-500/20 text-amber-400' : 'bg-white/10 text-gray-400'}`}>
+                <Award className="w-4 h-4" />
+              </div>
+              <div>
+                <h4 className={`text-sm font-medium ${requiresCertificate ? 'text-amber-400' : 'text-gray-300'}`}>Certified Event</h4>
+                <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
+                  Attendees will scan a QR code to join. After the event, puq.ai will automatically generate PDF certificates for all participants.
+                </p>
+              </div>
+              <div className="ml-auto mt-1 flex-shrink-0">
+                <div className={`w-8 h-4 rounded-full transition-colors relative ${requiresCertificate ? 'bg-amber-500' : 'bg-navy-800'}`}>
+                  <div className={`w-3 h-3 rounded-full bg-white absolute top-0.5 transition-all ${requiresCertificate ? 'left-4.5 right-auto translate-x-[14px]' : 'left-0.5'}`} />
+                </div>
+              </div>
             </div>
 
             {/* Actions */}

@@ -4,7 +4,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { socketService } from '../lib/socket';
 import api from '../lib/api';
 import UrgentModal from '../components/shared/UrgentModal';
-import { ShieldCheck, ArrowLeft, ScanLine, Loader2 } from 'lucide-react';
+import { ShieldCheck, ArrowLeft, ScanLine, Loader2, CheckCircle2 } from 'lucide-react';
 
 interface BookingDetail {
   id: string;
@@ -12,6 +12,8 @@ interface BookingDetail {
   scheduledStart: string;
   scheduledEnd: string;
   status: string;
+  expectedAttendees: number;
+  requiresCertificate: boolean;
   lab: {
     name: string;
     floor: number;
@@ -24,8 +26,9 @@ export default function CheckIn() {
   const { id } = useParams<{ id: string }>();
   const [booking, setBooking] = useState<BookingDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isConcluding, setIsConcluding] = useState(false);
   const [notFound, setNotFound] = useState(false);
-  const [status, setStatus] = useState<'waiting' | 'confirmed' | 'released'>('waiting');
+  const [status, setStatus] = useState<'waiting' | 'confirmed' | 'released' | 'concluded'>('waiting');
   const [showUrgentModal, setShowUrgentModal] = useState(false);
   const [minutesLeft, setMinutesLeft] = useState(5);
 
@@ -86,12 +89,24 @@ export default function CheckIn() {
     };
   }, [id, booking, status]);
 
-  // Demo helper: simulate the physical door scanner confirming presence
   const simulateScan = () => {
     const socket = socketService.connect();
     socket.emit('BOOKING_SECURED', { bookingId: id });
     setStatus('confirmed');
     setShowUrgentModal(false);
+  };
+
+  const handleConclude = async () => {
+    if (!window.confirm("Are you sure you want to conclude this event? This will finalize attendance and generate certificates.")) return;
+    setIsConcluding(true);
+    try {
+      await api.post(`/bookings/${id}/conclude`);
+      setStatus('concluded');
+    } catch (err: any) {
+      alert(err.response?.data?.error || "Failed to conclude event");
+    } finally {
+      setIsConcluding(false);
+    }
   };
 
   // ── Loading ──────────────────────────────────────────────────────────────────
@@ -161,7 +176,7 @@ export default function CheckIn() {
                   <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-electric-500 rounded-br-lg" />
 
                   <QRCodeSVG
-                    value={`sau-vision://checkin/${id}`}
+                    value={booking.expectedAttendees > 1 ? `${window.location.origin}/join/${id}` : `sau-vision://checkin/${id}`}
                     size={200}
                     level="H"
                     includeMargin={true}
@@ -176,16 +191,34 @@ export default function CheckIn() {
                   Waiting for scan...
                 </h3>
                 <p className="text-sm text-gray-400">
-                  Hold this QR code up to the scanner at the door of <span className="text-white font-medium">{booking.lab.name}</span> to confirm your attendance.
+                  {booking.expectedAttendees > 1
+                    ? `Attendees can scan this QR code with their phone camera to join the event.`
+                    : `Hold this QR code up to the scanner at the door of `}
+                  {booking.expectedAttendees <= 1 && <span className="text-white font-medium">{booking.lab.name}</span>}
+                  {booking.expectedAttendees <= 1 && ` to confirm your attendance.`}
                 </p>
 
-                {/* Demo trigger */}
-                <button
-                  onClick={simulateScan}
-                  className="mt-8 text-xs text-gray-500 hover:text-white border border-gray-700 px-3 py-1 rounded transition-colors"
-                >
-                  [Demo] Simulate Physical Scan
-                </button>
+                {/* Demo trigger & Conclude Button */}
+                <div className="mt-8 flex flex-col gap-3 w-full">
+                  {booking.expectedAttendees > 1 && (
+                    <button
+                      onClick={handleConclude}
+                      disabled={isConcluding}
+                      className="btn-primary py-3 w-full flex justify-center items-center gap-2"
+                    >
+                      {isConcluding ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+                      Conclude Event
+                    </button>
+                  )}
+                  {booking.expectedAttendees <= 1 && (
+                    <button
+                      onClick={simulateScan}
+                      className="text-xs text-gray-500 hover:text-white border border-gray-700 px-3 py-1 rounded transition-colors"
+                    >
+                      [Demo] Simulate Physical Scan
+                    </button>
+                  )}
+                </div>
               </>
             )}
 
@@ -206,6 +239,16 @@ export default function CheckIn() {
                 </div>
                 <h3 className="text-2xl font-bold text-white mb-2">Booking Released</h3>
                 <p className="text-gray-400">This booking was cancelled because no one checked in.</p>
+              </div>
+            )}
+
+            {status === 'concluded' && (
+              <div className="py-12 flex flex-col items-center animate-fade-in">
+                <div className="w-24 h-24 bg-blue-500/20 rounded-full flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(59,130,246,0.3)]">
+                  <CheckCircle2 className="w-12 h-12 text-blue-400" />
+                </div>
+                <h3 className="text-2xl font-bold text-white mb-2">Event Concluded</h3>
+                <p className="text-gray-400">Attendance finalized and puq.ai processing started.</p>
               </div>
             )}
 
