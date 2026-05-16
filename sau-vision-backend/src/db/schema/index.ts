@@ -5,3 +5,4 @@ export * from "./labs";
 export * from "./bookings";
 export * from "./registrations";
 export * from "./events";
+export * from "./studentHistory";

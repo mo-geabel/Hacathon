@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { db } from "../../db/client";
-import { bookings, labs } from "../../db/schema";
+import { bookings, labs, studentHistory, registrations, students } from "../../db/schema";
 import { eq, and, gte, lt, or } from "drizzle-orm";
 import { requireAuth, requireAdmin, requireStudent } from "../../middleware/auth";
 import { geminiModel } from "../../services/gemini";
@@ -22,6 +22,26 @@ const asyncHandler = (fn: Function) => (req: Request, res: Response, next: NextF
 router.get("/", requireAuth, asyncHandler(async (req: Request, res: Response) => {
   const { status, labId } = req.query;
   const { role, id: userId, facultyId } = req.user!;
+
+  // Helper function to calculate a student's importance score
+  const calculateScore = (student: any) => {
+    // Event rating (0-5) has higher weight (x15) than GPA (0-4) (x5)
+    const gpaScore = (student.gpa || 0) * 5;
+    const ratingScore = (student.eventRating || 0) * 15;
+    const penalty = (student.ghostedEventCount || 0) * 30;
+    return gpaScore + ratingScore - penalty;
+  };
+
+  // Helper function to sort a list of bookings by student performance
+  const sortBookingsByPerformance = (bookingsList: any[]) => {
+    return bookingsList.sort((a, b) => {
+      const scoreA = calculateScore(a.student);
+      const scoreB = calculateScore(b.student);
+      
+      if (scoreB !== scoreA) return scoreB - scoreA;
+      return a.createdAt.getTime() - b.createdAt.getTime();
+    });
+  };
 
   const filters = [];
 
@@ -61,7 +81,7 @@ router.get("/", requireAuth, asyncHandler(async (req: Request, res: Response) =>
       });
 
       const scoped = allBookings.filter((b) => labIds.includes(b.labId));
-      res.json(scoped);
+      res.json(sortBookingsByPerformance(scoped));
       return;
     }
   }
@@ -78,7 +98,7 @@ router.get("/", requireAuth, asyncHandler(async (req: Request, res: Response) =>
     orderBy: (b, { desc }) => [desc(b.createdAt)],
   });
 
-  res.json(allBookings);
+  res.json(sortBookingsByPerformance(allBookings));
 }));
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -156,6 +176,14 @@ router.post("/", requireAuth, requireStudent, asyncHandler(async (req: Request, 
     status: "pending",
   }).returning();
 
+  // Log the creation into the student's history
+  await db.insert(studentHistory).values({
+    studentId,
+    bookingId: newBooking.id,
+    eventType: "booking_created",
+    description: `Created a booking for ${expectedAttendees} attendees in lab ${labId}`
+  });
+
   res.status(201).json(newBooking);
 }));
 
@@ -216,41 +244,103 @@ router.post("/parse", requireAuth, requireStudent, asyncHandler(async (req: Requ
     return `ID: ${l.id} | Name: ${l.name} | Faculty: ${l.faculty.name} | Type: ${l.type} | Capacity: ${l.capacity} | Tags: ${tags.join(",")} | Description: ${l.aiDescription}`;
   }).join("\n");
 
-  // 3. Call the external puq.ai Webhook
+  // 3. Call Gemini AI to analyze the request and suggest the top 3 labs
   try {
-    const webhookUrl = process.env.PUQ_AI_WEBHOOK_URL || "https://api.puq.ai/h/a3eb61690eeb/sync";
-    
-    // If puq.ai uses the Dify engine under the hood, it requires variables to be inside "inputs" 
-    // and "response_mode" set to "blocking" for a synchronous JSON response.
-    const response = await axios.post(webhookUrl, {
-      inputs: {
-        student_prompt: prompt,
-        labs_context: labsContext
-      },
-      response_mode: "blocking",
-      user: req.user?.id || "anonymous"
-    }, {
-      // Dify workflows require the API Key in the Authorization header
-      headers: {
-        "Authorization": `Bearer ${process.env.PUQ_AI_API_KEY || ""}`,
-        "Content-Type": "application/json"
-      }
-    });
+    const aiPrompt = `
+You are an intelligent university lab booking assistant at Sakarya University (SAÜ).
+A student has made the following request: "${prompt}"
 
-    // We assume the puq.ai workflow directly returns the JSON object we requested
-    const parsedData = response.data;
+Here is the list of currently available labs in the university:
+${labsContext}
+
+Your task:
+1. Analyze the student's request — consider capacity, equipment, software (Python, MATLAB, etc.), lab type, and any faculty preference.
+2. Rank the TOP 3 best-matching labs from the list above. If fewer than 3 labs are available, return only those that exist.
+3. For each suggestion, explain WHY it is a good fit (or why it is not perfect but still acceptable).
+4. Extract a short title and description for the booking based on the student's request.
+5. Extract or suggest an appropriate number of attendees.
+
+You MUST respond ONLY with a valid JSON object matching this exact structure:
+{
+  "suggestions": [
+    {
+      "rank": 1,
+      "labId": "the-uuid-of-the-lab",
+      "labName": "Human readable lab name",
+      "facultyName": "Faculty name",
+      "matchScore": 95,
+      "reasoning": "Why this lab is the best fit"
+    },
+    {
+      "rank": 2,
+      "labId": "second-best-uuid",
+      "labName": "Second lab name",
+      "facultyName": "Faculty name",
+      "matchScore": 80,
+      "reasoning": "Why this is the second choice"
+    },
+    {
+      "rank": 3,
+      "labId": "third-best-uuid",
+      "labName": "Third lab name",
+      "facultyName": "Faculty name",
+      "matchScore": 60,
+      "reasoning": "Why this is still acceptable"
+    }
+  ],
+  "bookingDetails": {
+    "extractedTitle": "A concise title for the booking",
+    "extractedDescription": "A longer description of what the student needs",
+    "suggestedAttendees": 10
+  }
+}
+
+matchScore should be 0-100 where 100 is a perfect match.
+If a lab does not match well at all, do NOT include it in the suggestions — only return labs that are at least somewhat relevant.
+If no lab matches, return an empty "suggestions" array and explain in "bookingDetails.extractedDescription".
+    `;
+
+    const result = await geminiModel.generateContent(aiPrompt);
+    const responseText = result.response.text();
     
-    // If the workflow returns it as a stringified JSON inside a text field, we'd parse it here.
-    // Assuming puq.ai returns proper JSON headers:
-    const geminiResult = typeof parsedData === "string" ? JSON.parse(parsedData) : parsedData;
+    // Gemini in JSON mode guarantees valid JSON
+    const geminiResult = JSON.parse(responseText);
+
+    // 4. Enrich each suggestion with REAL lab data from the database
+    //    This ensures the frontend gets full lab details (capacity, type, floor, room, etc.)
+    //    and protects against any Gemini hallucination of non-existent IDs.
+    const enrichedSuggestions = [];
+    for (const suggestion of geminiResult.suggestions || []) {
+      const dbLab = availableLabs.find(l => l.id === suggestion.labId);
+      if (dbLab) {
+        enrichedSuggestions.push({
+          ...suggestion,
+          lab: {
+            id: dbLab.id,
+            name: dbLab.name,
+            type: dbLab.type,
+            capacity: dbLab.capacity,
+            floor: (dbLab as any).floor ?? null,
+            roomNumber: (dbLab as any).roomNumber ?? null,
+            status: dbLab.status,
+            faculty: dbLab.faculty,
+            aiTags: dbLab.aiTags,
+            aiDescription: dbLab.aiDescription,
+          }
+        });
+      }
+      // If the lab ID doesn't exist in the DB, skip it (Gemini hallucinated)
+    }
 
     res.json({
       originalPrompt: prompt,
-      geminiResult
+      availableLabCount: availableLabs.length,
+      suggestions: enrichedSuggestions,
+      bookingDetails: geminiResult.bookingDetails
     });
   } catch (error: any) {
-    console.error("puq.ai Webhook Error:", error?.response?.data || error.message);
-    res.status(500).json({ error: "External AI Workflow failed", details: error.message });
+    console.error("Gemini AI Error:", error?.response?.data || error.message);
+    res.status(500).json({ error: "AI Parsing failed", details: error.message });
   }
 }));
 
@@ -461,6 +551,209 @@ router.patch("/:id/status", requireAuth, requireAdmin, asyncHandler(async (req: 
     .returning();
 
   res.json(updatedBooking);
+}));
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/bookings/:id/invitations
+// Organizer only — fetch the list of QR code payloads for all attendees
+// ─────────────────────────────────────────────────────────────────────────────
+router.get("/:id/invitations", requireAuth, requireStudent, asyncHandler(async (req: Request, res: Response) => {
+  const bookingId = req.params.id;
+  const studentId = req.user!.id;
+
+  const booking = await db.query.bookings.findFirst({
+    where: eq(bookings.id, bookingId),
+    with: {
+      registrations: {
+        with: { student: { columns: { passwordHash: false } } },
+      }
+    }
+  });
+
+  if (!booking || booking.studentId !== studentId) {
+    res.status(404).json({ error: "Booking not found or not owned by you" });
+    return;
+  }
+
+  // Generate QR code strings (Payloads) for each registered student
+  const invitations = (booking.registrations as any[]).map((reg: any) => {
+    return {
+      student: reg.student,
+      qrPayload: `sau-vision://checkin/${reg.id}`,
+      status: reg.status
+    };
+  });
+
+  res.json({
+    bookingId: booking.id,
+    title: booking.title,
+    invitations
+  });
+}));
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/bookings/:id/my-qr
+// Student only — fetch your own personal QR code for an event you registered for
+// ─────────────────────────────────────────────────────────────────────────────
+router.get("/:id/my-qr", requireAuth, requireStudent, asyncHandler(async (req: Request, res: Response) => {
+  const bookingId = req.params.id;
+  const studentId = req.user!.id;
+
+
+  const reg = await db.query.registrations.findFirst({
+    where: and(
+      eq(registrations.bookingId, bookingId),
+      eq(registrations.studentId, studentId)
+    )
+  });
+
+  if (!reg) {
+    res.status(404).json({ error: "You are not registered for this event." });
+    return;
+  }
+
+  res.json({
+    registrationId: reg.id,
+    qrPayload: `sau-vision://checkin/${reg.id}`,
+    status: reg.status
+  });
+}));
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/bookings/checkin
+// Admin/Organizer only — scan a QR code to mark a student as attended
+// ─────────────────────────────────────────────────────────────────────────────
+router.post("/checkin", requireAuth, asyncHandler(async (req: Request, res: Response) => {
+  const { qrPayload } = req.body;
+  const userId = req.user!.id;
+
+  if (!qrPayload || !qrPayload.startsWith("sau-vision://checkin/")) {
+    res.status(400).json({ error: "Invalid QR code format" });
+    return;
+  }
+
+  const registrationId = qrPayload.split("sau-vision://checkin/")[1];
+
+  const reg = await db.query.registrations.findFirst({
+    where: eq(registrations.id, registrationId),
+    with: { booking: true }
+  });
+
+  if (!reg) {
+    res.status(404).json({ error: "Registration not found for this QR code" });
+    return;
+  }
+
+  // Verify the person scanning is the organizer or an admin
+  if (req.user!.role !== "admin" && reg.booking.studentId !== userId) {
+    res.status(403).json({ error: "Access denied. You are not the organizer of this event." });
+    return;
+  }
+
+  if (reg.status === "attended") {
+    res.status(400).json({ error: "Student has already been checked in." });
+    return;
+  }
+
+  const [updatedReg] = await db
+    .update(registrations)
+    .set({
+      status: "attended",
+      checkInTime: new Date(),
+      updatedAt: new Date()
+    })
+    .where(eq(registrations.id, registrationId))
+    .returning();
+
+  res.json({
+    message: "Check-in successful",
+    registration: updatedReg
+  });
+}));
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/bookings/:id/conclude
+// Organizer only — ends the event, finalizes attendance, and PUNISHES no-shows
+// ─────────────────────────────────────────────────────────────────────────────
+router.post("/:id/conclude", requireAuth, requireStudent, asyncHandler(async (req: Request, res: Response) => {
+  const bookingId = req.params.id;
+  const userId = req.user!.id;
+
+
+  const booking = await db.query.bookings.findFirst({
+    where: eq(bookings.id, bookingId),
+    with: { registrations: true }
+  });
+
+  if (!booking) {
+    res.status(404).json({ error: "Booking not found" });
+    return;
+  }
+
+  if (booking.studentId !== userId) {
+    res.status(403).json({ error: "Only the organizer can conclude this event." });
+    return;
+  }
+
+  if (booking.status === "completed") {
+    res.status(400).json({ error: "This event is already concluded." });
+    return;
+  }
+
+  // 1. Find no-shows (registered but didn't attend)
+  const noShows = booking.registrations.filter((r: any) => r.status === "registered");
+
+  // 2. Punish no-shows
+  for (const noShow of noShows) {
+    // Update registration status to "no_show"
+    await db.update(registrations)
+      .set({ status: "no_show", updatedAt: new Date() })
+      .where(eq(registrations.id, noShow.id));
+
+    // Fetch the student
+    const student = await db.query.students.findFirst({
+      where: eq(students.id, (noShow as any).studentId)
+    });
+
+    if (student) {
+      // Decrease rating and increase ghosted count
+      // Rating drops by 0.5 (min 0)
+      const newRating = Math.max((student.eventRating || 5.0) - 0.5, 0);
+      const newGhostCount = (student.ghostedEventCount || 0) + 1;
+
+      await db.update(students)
+        .set({
+          eventRating: newRating,
+          ghostedEventCount: newGhostCount,
+          updatedAt: new Date()
+        })
+        .where(eq(students.id, student.id));
+
+      // Log punishment in their history
+      await db.insert(studentHistory).values({
+        studentId: student.id,
+        bookingId: booking.id,
+        eventType: "ghosted",
+        description: `Failed to attend event '${booking.title}'. Rating decreased to ${newRating.toFixed(1)} and ghost count increased.`
+      });
+    }
+  }
+
+  // 3. Mark booking as completed
+  const [completedBooking] = await db.update(bookings)
+    .set({ status: "completed", actualEnd: new Date(), updatedAt: new Date() })
+    .where(eq(bookings.id, booking.id))
+    .returning();
+
+  res.json({
+    message: "Event successfully concluded.",
+    booking: completedBooking,
+    stats: {
+      totalRegistrations: booking.registrations.length,
+      attended: booking.registrations.length - noShows.length,
+      noShowsPunished: noShows.length
+    }
+  });
 }));
 
 export default router;
