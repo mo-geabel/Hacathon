@@ -32,9 +32,9 @@ interface BookingFormModalProps {
   onSuccess: () => void;
 }
 
-// Generate 30-minute time slots from 08:00 to 22:00
-const TIME_OPTIONS = Array.from({ length: 29 }, (_, i) => {
-  const totalMins = 8 * 60 + i * 30;
+// Generate 30-minute time slots from 09:00 to 18:30
+const TIME_OPTIONS = Array.from({ length: 20 }, (_, i) => {
+  const totalMins = 9 * 60 + i * 30;
   const h = Math.floor(totalMins / 60).toString().padStart(2, '0');
   const m = (totalMins % 60).toString().padStart(2, '0');
   return `${h}:${m}`;
@@ -48,11 +48,61 @@ function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
+// Helper to get smart default slots
+function getNextAvailableTimeSlot() {
+  const now = new Date();
+  let h = now.getHours();
+  let m = now.getMinutes();
+
+  if (m < 30) {
+    m = 30;
+  } else {
+    h += 1;
+    m = 0;
+  }
+
+  // Clamp to our business hours 09:00 to 18:30
+  if (h < 9) { h = 9; m = 0; }
+  // If we calculate a start time past 18:00, clamp it to 18:00 so a 30m slot fits before 18:30
+  if (h > 18 || (h === 18 && m > 0)) { h = 18; m = 0; }
+
+  const startH = h.toString().padStart(2, '0');
+  const startM = m.toString().padStart(2, '0');
+  const startTime = `${startH}:${startM}`;
+
+  let endH = h + 2;
+  let endM = m;
+  if (endH > 18 || (endH === 18 && endM > 30)) { endH = 18; endM = 30; }
+  const endTime = `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
+
+  return { startTime, endTime };
+}
+
 export default function BookingFormModal({ lab, existingBooking, onClose, onSuccess }: BookingFormModalProps) {
-  const today = new Date().toISOString().split('T')[0];
-  const [date, setDate] = useState(existingBooking?.date || today);
-  const [startTime, setStartTime] = useState(existingBooking?.startTime || '09:00');
-  const [endTime, setEndTime] = useState(existingBooking?.endTime || '11:00');
+  const todayDateObj = new Date();
+  // Format as YYYY-MM-DD using local time
+  const today = todayDateObj.toLocaleDateString('en-CA');
+  const defaultSlots = getNextAvailableTimeSlot();
+
+  // If it's very late (past 18:00), default to tomorrow since bookings end at 18:30
+  const isLate = todayDateObj.getHours() >= 18;
+  const defaultDate = isLate ? new Date(todayDateObj.getTime() + 86400000).toLocaleDateString('en-CA') : today;
+  const initialStart = isLate ? '09:00' : defaultSlots.startTime;
+  const initialEnd = isLate ? '11:00' : defaultSlots.endTime;
+
+  const [date, setDate] = useState(existingBooking?.date || defaultDate);
+  const [startTime, setStartTime] = useState(existingBooking?.startTime || initialStart);
+  const [endTime, setEndTime] = useState(existingBooking?.endTime || initialEnd);
+
+  // When startTime changes, push endTime forward if it's no longer after startTime
+  const handleStartTimeChange = (newStart: string) => {
+    setStartTime(newStart);
+    // Find the next slot after newStart in TIME_OPTIONS and set as endTime if current endTime is invalid
+    if (endTime <= newStart) {
+      const nextSlot = TIME_OPTIONS.find(t => t > newStart);
+      setEndTime(nextSlot || '18:30');
+    }
+  };
   const [title, setTitle] = useState(existingBooking?.title || '');
   const [description, setDescription] = useState(existingBooking?.description || '');
   const [attendees, setAttendees] = useState(existingBooking?.expectedAttendees || 1);
@@ -63,7 +113,6 @@ export default function BookingFormModal({ lab, existingBooking, onClose, onSucc
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
-  // Load booked slots when the lab or date changes
   useEffect(() => {
     const fetchSlots = async () => {
       setSlotsLoading(true);
@@ -79,21 +128,35 @@ export default function BookingFormModal({ lab, existingBooking, onClose, onSucc
     fetchSlots();
   }, [lab.id, date]);
 
-  // Check if a given time slot overlaps any approved/active booking
   const isSlotTaken = (slotTime: string) => {
     const slotStart = new Date(`${date}T${slotTime}:00`);
     return bookedSlots.some((b: any) => {
-      // If we are editing, we don't care if our own existing booking overlaps itself (though bookedSlots 
-      // from API only returns approved/active, so it shouldn't be here anyway if it's pending).
-      // But just in case Option B changes, we exclude it if present.
       if (existingBooking && b.bookingId === existingBooking.id) return false;
-      
       const bStart = new Date(b.scheduledStart);
       const bEnd = new Date(b.scheduledEnd);
       return slotStart >= bStart && slotStart < bEnd;
     });
   };
 
+  const getAvailableTimeOptions = () => {
+    const now = new Date();
+    const currentH = now.getHours();
+    const currentM = now.getMinutes();
+    const isToday = date === today;
+
+    return TIME_OPTIONS.map(t => {
+      let isPast = false;
+      if (isToday) {
+        const [h, m] = t.split(':').map(Number);
+        if (h < currentH || (h === currentH && m < currentM)) {
+          isPast = true;
+        }
+      }
+      return { time: t, isPast };
+    });
+  };
+
+  const timeOptionsWithPast = getAvailableTimeOptions();
   const isEndBeforeStart = endTime <= startTime;
   const isAttendeesOverCapacity = attendees > lab.capacity;
 
@@ -104,6 +167,12 @@ export default function BookingFormModal({ lab, existingBooking, onClose, onSucc
     if (!title.trim()) { setError('Please add a session title.'); return; }
     if (isEndBeforeStart) { setError('End time must be after start time.'); return; }
     if (isAttendeesOverCapacity) { setError(`Max capacity is ${lab.capacity} for this lab.`); return; }
+
+    const selectedStartObj = new Date(`${date}T${startTime}:00`);
+    if (selectedStartObj < new Date()) {
+      setError('You cannot request a booking in the past.');
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -208,14 +277,15 @@ export default function BookingFormModal({ lab, existingBooking, onClose, onSucc
                 </label>
                 <select
                   value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                  className="w-full bg-slate-100 dark:bg-white/5 border border-border rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-electric-500"
+                  onChange={(e) => handleStartTimeChange(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-electric-500"
                 >
-                  {TIME_OPTIONS.map((t) => {
+                  {timeOptionsWithPast.map(({ time: t, isPast }) => {
                     const taken = isSlotTaken(t);
+                    const disabled = taken || isPast;
                     return (
-                      <option key={t} value={t} disabled={taken} className={taken ? 'text-gray-600' : ''}>
-                        {t}{taken ? ' — taken' : ''}
+                      <option key={t} value={t} disabled={disabled} className={disabled ? 'text-gray-400' : 'text-black'}>
+                        {t}{taken ? ' — taken' : isPast ? ' — past' : ''}
                       </option>
                     );
                   })}
@@ -230,9 +300,16 @@ export default function BookingFormModal({ lab, existingBooking, onClose, onSucc
                   onChange={(e) => setEndTime(e.target.value)}
                   className="w-full bg-slate-100 dark:bg-white/5 border border-border rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-electric-500"
                 >
-                  {TIME_OPTIONS.map((t) => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
+                  {timeOptionsWithPast.map(({ time: t, isPast }) => {
+                    // Disable if the slot is at or before the start time, or if it's in the past today
+                    const isBeforeOrEqualStart = t <= startTime;
+                    const disabled = isBeforeOrEqualStart || (isPast && date === today);
+                    return (
+                      <option key={t} value={t} disabled={disabled} className={disabled ? 'text-gray-400' : 'text-black'}>
+                        {t}{isBeforeOrEqualStart ? ' — before start' : isPast && date === today ? ' — past' : ''}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
             </div>

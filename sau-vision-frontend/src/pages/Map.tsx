@@ -41,6 +41,7 @@ export default function MapPage() {
           lng: lab.faculty?.longitude || 30.3330,
           facultyName: lab.faculty?.name || 'Unknown Faculty',
           facultyId: lab.faculty?.id,
+          bookings: lab.bookings || [],
         }));
         setRooms(mappedRooms);
       } catch (error) {

@@ -1,16 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import ApprovalTable from '../components/admin/ApprovalTable';
-import NotificationBadge from '../components/admin/NotificationBadge';
+import AdminStatsCards from '../components/admin/AdminStatsCards';
+import BookingsChart from '../components/admin/BookingsChart';
+import LiveSessionsTable from '../components/admin/LiveSessionsTable';
 import type { Booking } from '../types';
-import { ShieldCheck, BarChart3, Users, LayoutDashboard } from 'lucide-react';
+import { ShieldCheck, BarChart3, Users, LayoutDashboard, Activity, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api from '../lib/api';
 
 export default function Admin() {
   const { user } = useAuth();
+  const { addToast } = useToast();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'overview' | 'approvals' | 'live' | 'reports'>('overview');
 
   useEffect(() => {
     const fetchBookings = async () => {
@@ -35,7 +40,12 @@ export default function Admin() {
             time: timeStr,
             duration,
             status: b.status,
-            reliabilityScore: 95,
+            title: b.title,
+            description: b.description,
+            expectedAttendees: b.expectedAttendees,
+            studentComment: b.studentComment,
+            student: b.student,
+            reliabilityScore: 95, // Still mocked until backend provides it
             qrToken: b.status === 'approved' ? `live-qr-${b.id}` : undefined
           };
         });
@@ -43,16 +53,18 @@ export default function Admin() {
         setBookings(mapped);
       } catch (error) {
         console.error('Failed to fetch bookings', error);
+        addToast('Failed to load bookings', 'error');
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchBookings();
-  }, []);
+  }, [addToast]);
 
   const pendingBookings = bookings.filter(b => b.status === 'pending');
   const activeBookings = bookings.filter(b => b.status === 'active' || b.status === 'approved');
+  const completedBookings = bookings.filter(b => b.status === 'completed');
 
   const handleApprove = async (id: string) => {
     try {
@@ -60,9 +72,10 @@ export default function Admin() {
       setBookings(prev => prev.map(b => 
         b.id === id ? { ...b, status: 'approved', qrToken: `live-qr-${Date.now()}` } : b
       ));
+      addToast('Booking approved successfully', 'success');
     } catch (error) {
       console.error('Failed to approve booking', error);
-      alert('Failed to approve booking');
+      addToast('Failed to approve booking', 'error');
     }
   };
 
@@ -72,11 +85,19 @@ export default function Admin() {
       setBookings(prev => prev.map(b => 
         b.id === id ? { ...b, status: 'rejected' } : b
       ));
+      addToast('Booking rejected', 'info');
     } catch (error) {
       console.error('Failed to reject booking', error);
-      alert('Failed to reject booking');
+      addToast('Failed to reject booking', 'error');
     }
   };
+
+  const tabs = [
+    { id: 'overview', label: 'Overview', icon: BarChart3 },
+    { id: 'approvals', label: 'Pending Approvals', icon: Users, badge: pendingBookings.length },
+    { id: 'live', label: 'Live Monitoring', icon: Activity, badge: activeBookings.length },
+    { id: 'reports', label: 'Post-Event Reports', icon: FileText },
+  ] as const;
 
   return (
     <div className="min-h-screen bg-background pt-24 pb-12 px-4 sm:px-6 lg:px-8">
@@ -87,7 +108,7 @@ export default function Admin() {
           <div>
             <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
               <ShieldCheck className="w-8 h-8 text-electric-500" />
-              Admin Dashboard
+              Admin Workspace
             </h1>
             <p className="text-slate-500 dark:text-gray-400 mt-2">Welcome back, {user?.name}</p>
           </div>
@@ -96,7 +117,6 @@ export default function Admin() {
             <Link to="/map" className="btn-ghost flex items-center gap-2">
               <LayoutDashboard className="w-4 h-4" /> Live Map
             </Link>
-            <NotificationBadge count={pendingBookings.length} />
           </div>
         </div>
 
@@ -176,13 +196,38 @@ export default function Admin() {
                   </div>
                   <div className="text-xs text-slate-500 dark:text-gray-400">2026-05-13 • 09:00 (120m)</div>
                 </div>
-              </div>
-            </div>
-          </div>
+              )}
+
+              {activeTab === 'approvals' && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <ApprovalTable 
+                    bookings={pendingBookings} 
+                    onApprove={handleApprove}
+                    onReject={handleReject}
+                  />
+                </div>
+              )}
+
+              {activeTab === 'live' && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <LiveSessionsTable bookings={activeBookings} />
+                </div>
+              )}
+
+              {activeTab === 'reports' && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <div className="glass-card p-12 text-center">
+                    <FileText className="w-12 h-12 text-gray-500 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold text-white mb-2">Post-Event Reports Archive</h3>
+                    <p className="text-gray-400">Detailed ROI and Engagement reports generated by puq.ai will appear here.</p>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </div>
 
       </div>
     </div>
   );
 }
-
