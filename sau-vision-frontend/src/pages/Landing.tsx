@@ -1,37 +1,47 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Activity, Map, ShieldCheck, Zap, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
-import { mockRooms } from '../lib/mockData';
+import api from '../lib/api';
 
-// The 3 images you placed in /public/images/
 const HERO_IMAGES = [
   { src: '/images/students-sitting-lawn-reading.jpg', caption: 'Students Learning Together' },
   { src: '/images/high-school-students-conducting-hands-on-engineering-experiment-in-lab-photo.jpg', caption: 'World-Class Labs & Facilities' },
   { src: '/images/multiethnic-group-happy-students-posing-classroom.jpg', caption: 'Campus Life at SAÜ' },
 ];
 
+interface LiveStats {
+  totalRooms: number;
+  activeSessions: number;
+}
+
 export default function Landing() {
-  const [activeRooms, setActiveRooms] = useState(0);
+  const [stats, setStats] = useState<LiveStats>({ totalRooms: 0, activeSessions: 0 });
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-  // Auto-rotate slideshow
+  // Fetch live lab stats from the real API
   useEffect(() => {
-    const timer = setInterval(() => {
-      goToNext();
-    }, 6000);
-    return () => clearInterval(timer);
-  }, [currentSlide]);
-
-  // Simulate live stats
-  useEffect(() => {
-    const active = mockRooms.filter(r => r.status === 'occupied').length;
-    setActiveRooms(active);
-    const interval = setInterval(() => {
-      setActiveRooms(prev => (prev === active ? active + 1 : active));
-    }, 5000);
+    const fetchStats = async () => {
+      try {
+        const { data: labs } = await api.get('/labs');
+        const totalRooms = labs.length;
+        const activeSessions = labs.filter((l: any) => l.status === 'occupied').length;
+        setStats({ totalRooms, activeSessions });
+      } catch {
+        // Graceful fallback — keep zeros if API is unreachable
+      }
+    };
+    fetchStats();
+    // Refresh live stats every 30 seconds
+    const interval = setInterval(fetchStats, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  // Auto-rotate slideshow
+  useEffect(() => {
+    const timer = setInterval(() => goToNext(), 6000);
+    return () => clearInterval(timer);
+  }, [currentSlide]);
 
   const goToSlide = (index: number) => {
     if (isTransitioning) return;
@@ -47,7 +57,7 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-navy-900 text-white overflow-hidden selection:bg-electric-500/30">
-      
+
       {/* Navbar */}
       <nav className="absolute top-0 left-0 right-0 p-6 flex justify-between items-center z-50">
         <div className="flex items-center gap-2">
@@ -82,17 +92,17 @@ export default function Landing() {
           />
         ))}
 
-        {/* Multi-layer dark overlay for readability */}
+        {/* Multi-layer dark overlay */}
         <div className="absolute inset-0 z-10 bg-gradient-to-b from-navy-900/70 via-navy-900/50 to-navy-900/90" />
         <div className="absolute inset-0 z-10 bg-gradient-to-r from-navy-900/40 via-transparent to-navy-900/40" />
 
-        {/* Glowing orbs on top of image */}
+        {/* Glowing orbs */}
         <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-electric-500/15 rounded-full blur-[100px] pointer-events-none z-20" />
         <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-blue-400/10 rounded-full blur-[80px] pointer-events-none z-20" />
 
         {/* Hero Content */}
         <div className="relative z-30 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          
+
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-electric-500/20 border border-electric-500/30 text-electric-300 text-sm font-medium mb-8 animate-fade-in backdrop-blur-sm">
             <Sparkles className="w-4 h-4" />
             <span>Next-Gen Facility Management</span>
@@ -102,11 +112,11 @@ export default function Landing() {
             Smart Campus, <br className="hidden md:block" />
             <span className="gradient-text">Zero Friction.</span>
           </h1>
-          
+
           <p className="mt-4 text-xl text-gray-200 max-w-2xl mx-auto mb-10 animate-slide-up drop-shadow-lg" style={{ animationDelay: '100ms' }}>
             Book rooms with AI, verify attendance with IoT vision, and manage campus density in real-time. The future of Sakarya University facilities is here.
           </p>
-          
+
           <div className="flex flex-col sm:flex-row justify-center gap-4 animate-slide-up" style={{ animationDelay: '200ms' }}>
             <Link to="/login" className="btn-primary text-lg px-8 py-3 shadow-lg">
               Book a Room
@@ -152,16 +162,16 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Stats Ticker */}
+      {/* Live Stats Ticker */}
       <section className="border-y border-white/5 bg-navy-800/60 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 py-8 text-center">
             <div>
-              <div className="text-4xl font-bold text-white mb-1">{mockRooms.length}</div>
+              <div className="text-4xl font-bold text-white mb-1">{stats.totalRooms}</div>
               <div className="text-sm text-gray-400 uppercase tracking-wider">Connected Rooms</div>
             </div>
             <div>
-              <div className="text-4xl font-bold text-electric-400 mb-1">{activeRooms}</div>
+              <div className="text-4xl font-bold text-electric-400 mb-1">{stats.activeSessions}</div>
               <div className="text-sm text-gray-400 uppercase tracking-wider">Active Sessions</div>
             </div>
             <div>

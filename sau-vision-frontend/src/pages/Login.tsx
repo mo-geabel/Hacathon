@@ -1,20 +1,23 @@
 import React, { useState } from 'react';
-import { useNavigate, Navigate } from 'react-router-dom';
+import { useNavigate, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LogIn, GraduationCap, ShieldCheck, Loader2 } from 'lucide-react';
+import { LogIn, Library, ShieldCheck, Loader2, GraduationCap } from 'lucide-react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'student' | 'admin'>('student');
   const [error, setError] = useState('');
-  
+
   const { login, isLoading, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // If already authenticated, redirect to their dashboard
+  // If already authenticated, redirect to their dashboard (or returnTo destination)
   if (isAuthenticated && user) {
-    return <Navigate to={user.role === 'admin' ? '/admin' : '/dashboard'} replace />;
+    const params = new URLSearchParams(location.search);
+    const returnTo = params.get('returnTo');
+    const dest = returnTo || (user.role === 'admin' ? '/admin' : '/dashboard');
+    return <Navigate to={dest} replace />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -28,137 +31,164 @@ export default function Login() {
 
     try {
       await login(email, password);
-      // The redirect is handled at the top of the component once isAuthenticated becomes true
     } catch (err: any) {
       setError(err.message || 'Failed to login. Please try again.');
     }
   };
 
   return (
-    <div className="min-h-screen bg-navy-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden">
-      {/* Background decoration */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-electric-500/10 blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-blue-400/10 blur-[120px] pointer-events-none" />
-
-      <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
-        <div className="flex justify-center mb-6">
-          <div className="w-16 h-16 rounded-2xl bg-electric-500/20 flex items-center justify-center border border-electric-500/30 glow-blue">
-            <GraduationCap className="w-8 h-8 text-electric-400" />
+    <div className="flex min-h-screen bg-[#0d1829]">
+      {/* Left Pane - Image & Academic Quote */}
+      <div className="hidden lg:flex lg:w-1/2 relative bg-navy-900 border-r border-white/5">
+        <div className="absolute inset-0 bg-navy-900/60 mix-blend-multiply z-10" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0d1829] via-[#0d1829]/60 to-transparent z-10" />
+        <img 
+          src="/academic-bg.png" 
+          alt="Campus Library" 
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        
+        <div className="relative z-20 flex flex-col justify-end p-16 h-full text-white max-w-2xl">
+          <div className="flex items-center gap-4 mb-8">
+            <div className="w-14 h-14 rounded-2xl bg-amber-500/20 flex items-center justify-center border border-amber-500/30 backdrop-blur-sm">
+              <Library className="w-7 h-7 text-amber-400" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-serif font-bold tracking-tight">Sakarya University</h1>
+              <p className="text-amber-400/90 font-medium tracking-wide text-sm uppercase mt-1">SAÜ-Vision Portal</p>
+            </div>
           </div>
+          <blockquote className="space-y-6">
+            <p className="text-2xl font-serif font-medium leading-relaxed text-gray-100">
+              "Empowering the minds of tomorrow through advanced, intelligent campus facility management."
+            </p>
+            <footer className="flex items-center gap-3">
+              <div className="h-px w-12 bg-amber-500/50" />
+              <span className="text-sm font-medium text-gray-400 uppercase tracking-widest">
+                Academic Excellence
+              </span>
+            </footer>
+          </blockquote>
         </div>
-        <h2 className="text-center text-3xl font-extrabold text-white tracking-tight">
-          SAÜ-Vision
-        </h2>
-        <p className="mt-2 text-center text-sm text-muted-foreground">
-          Smart Campus Facility Management System
-        </p>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md relative z-10">
-        <div className="glass-card py-8 px-4 sm:px-10">
-          
-          <div className="flex p-1 space-x-1 bg-navy-800/50 rounded-lg mb-8 border border-white/5">
-            <button
-              type="button"
-              onClick={() => setRole('student')}
-              className={`flex-1 py-2 text-sm font-medium rounded-md transition-all flex items-center justify-center gap-2
-                ${role === 'student' ? 'bg-electric-500 text-white shadow-lg' : 'text-muted-foreground hover:text-white hover:bg-white/5'}`}
-            >
-              <GraduationCap className="w-4 h-4" /> Student
-            </button>
-            <button
-              type="button"
-              onClick={() => setRole('admin')}
-              className={`flex-1 py-2 text-sm font-medium rounded-md transition-all flex items-center justify-center gap-2
-                ${role === 'admin' ? 'bg-electric-500 text-white shadow-lg' : 'text-muted-foreground hover:text-white hover:bg-white/5'}`}
-            >
-              <ShieldCheck className="w-4 h-4" /> Admin
-            </button>
+      {/* Right Pane - Login Form */}
+      <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-20 xl:px-32 relative">
+        {/* Subtle background glow for right pane */}
+        <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-electric-500/5 blur-[120px] pointer-events-none" />
+
+        <div className="w-full max-w-md mx-auto relative z-10">
+          <div className="lg:hidden flex items-center gap-3 mb-10">
+             <div className="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center border border-amber-500/30">
+              <Library className="w-6 h-6 text-amber-400" />
+            </div>
+            <div>
+              <h2 className="text-xl font-serif font-bold text-white tracking-tight">Sakarya University</h2>
+              <p className="text-amber-400/90 text-xs font-medium uppercase tracking-widest mt-0.5">SAÜ-Vision</p>
+            </div>
           </div>
 
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            {error && (
-              <div className="bg-red-500/10 border border-red-500/50 text-red-400 text-sm p-3 rounded-lg text-center animate-shake">
-                {error}
-              </div>
-            )}
+          <div>
+            <h2 className="text-3xl font-bold text-white tracking-tight font-serif mb-2">
+              Welcome back
+            </h2>
+            <p className="text-sm text-gray-400 mb-8">
+              Please enter your academic credentials to access the portal.
+            </p>
+          </div>
 
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-300">
-                University Email
-              </label>
-              <div className="mt-1">
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-white/10 rounded-lg shadow-sm placeholder-gray-500 bg-navy-800 text-white focus:outline-none focus:ring-2 focus:ring-electric-500 focus:border-transparent sm:text-sm transition-all"
-                  placeholder={role === 'student' ? "student@ogr.sakarya.edu.tr" : "staff@sakarya.edu.tr"}
-                />
-              </div>
-            </div>
+          <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-6 sm:p-8 backdrop-blur-sm">
+            <form className="space-y-6" onSubmit={handleSubmit}>
+              {error && (
+                <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm p-3.5 rounded-xl flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-red-400 shrink-0" />
+                  {error}
+                </div>
+              )}
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-300">
-                Password
-              </label>
-              <div className="mt-1">
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-white/10 rounded-lg shadow-sm placeholder-gray-500 bg-navy-800 text-white focus:outline-none focus:ring-2 focus:ring-electric-500 focus:border-transparent sm:text-sm transition-all"
-                  placeholder="••••••••"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <input
-                  id="remember-me"
-                  name="remember-me"
-                  type="checkbox"
-                  className="h-4 w-4 bg-navy-800 border-white/10 rounded text-electric-500 focus:ring-electric-500"
-                />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-400">
-                  Remember me
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-300">
+                  University Email
                 </label>
+                <div className="mt-2">
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="appearance-none block w-full px-4 py-3 border border-white/10 rounded-xl shadow-sm placeholder-gray-500 bg-navy-900/50 text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 sm:text-sm transition-all"
+                    placeholder="name@sakarya.edu.tr"
+                  />
+                </div>
               </div>
 
-              <div className="text-sm">
-                <a href="#" className="font-medium text-electric-400 hover:text-electric-300 transition-colors">
-                  Forgot your password?
-                </a>
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-300">
+                  Password
+                </label>
+                <div className="mt-2">
+                  <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    autoComplete="current-password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="appearance-none block w-full px-4 py-3 border border-white/10 rounded-xl shadow-sm placeholder-gray-500 bg-navy-900/50 text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 sm:text-sm transition-all"
+                    placeholder="••••••••"
+                  />
+                </div>
               </div>
-            </div>
 
-            <div>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-electric-600 hover:bg-electric-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-electric-500 focus:ring-offset-navy-900 transition-all disabled:opacity-50 disabled:cursor-not-allowed items-center gap-2"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" /> Signing in...
-                  </>
-                ) : (
-                  <>
-                    <LogIn className="w-5 h-5" /> Sign in as {role === 'student' ? 'Student' : 'Admin'}
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
+              <div className="flex items-center justify-between pt-2">
+                <div className="flex items-center">
+                  <input
+                    id="remember-me"
+                    name="remember-me"
+                    type="checkbox"
+                    className="h-4 w-4 bg-navy-900 border-white/10 rounded text-amber-500 focus:ring-amber-500"
+                  />
+                  <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-400">
+                    Remember me
+                  </label>
+                </div>
+
+                <div className="text-sm">
+                  <a href="#" className="font-medium text-gray-400 hover:text-amber-400 transition-colors">
+                    Forgot password?
+                  </a>
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-navy-900 bg-amber-400 hover:bg-amber-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 focus:ring-offset-[#0d1829] transition-all disabled:opacity-50 disabled:cursor-not-allowed items-center gap-2"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" /> Authenticating...
+                    </>
+                  ) : (
+                    <>
+                      <LogIn className="w-5 h-5" /> Access Portal
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+          
+          <div className="mt-8 text-center">
+            <p className="text-xs text-gray-500">
+              By logging in, you agree to the University's Acceptable Use Policy.
+            </p>
+          </div>
         </div>
       </div>
     </div>

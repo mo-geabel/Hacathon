@@ -1,8 +1,8 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { db } from "../../db/client";
 import { bookings, labs } from "../../db/schema";
-import { eq, and, gte } from "drizzle-orm";
-import { requireAuth, requireAdmin } from "../../middleware/auth";
+import { eq, and, gte, lt, or } from "drizzle-orm";
+import { requireAuth, requireAdmin, requireStudent } from "../../middleware/auth";
 import { geminiModel } from "../../services/gemini";
 
 const router = Router();
@@ -11,36 +11,136 @@ const asyncHandler = (fn: Function) => (req: Request, res: Response, next: NextF
   Promise.resolve(fn(req, res, next)).catch(next);
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
 // GET /api/bookings
-// List bookings with optional filters (status, labId)
+// Role-scoped listing:
+//   • Student → only sees their own bookings (hard-scoped by JWT studentId)
+//   • Admin   → sees all bookings in their faculty's labs (scoped by facultyId)
+//               Pass ?labId=... or ?status=... to filter further
+// ─────────────────────────────────────────────────────────────────────────────
 router.get("/", requireAuth, asyncHandler(async (req: Request, res: Response) => {
   const { status, labId } = req.query;
+  const { role, id: userId, facultyId } = req.user!;
+
   const filters = [];
 
+  // Students can only ever see their own bookings
+  if (role === "student") {
+    filters.push(eq(bookings.studentId, userId));
+  }
+
+  // Admins are scoped to bookings whose lab belongs to their faculty
+  // If a ?labId= filter is provided it overrides the faculty-wide scope
+  if (role === "admin") {
+    if (typeof labId === "string") {
+      filters.push(eq(bookings.labId, labId));
+    } else if (facultyId) {
+      // Join through labs to filter by facultyId
+      const facultyLabs = await db
+        .select({ id: labs.id })
+        .from(labs)
+        .where(eq(labs.facultyId, facultyId));
+
+      const labIds = facultyLabs.map((l) => l.id);
+      if (labIds.length === 0) {
+        res.json([]); // Admin has no labs yet
+        return;
+      }
+      // Drizzle doesn't have inArray in this version — filter in JS
+      const allBookings = await db.query.bookings.findMany({
+        where: status
+          ? eq(bookings.status, status as any)
+          : undefined,
+        with: {
+          student: { columns: { passwordHash: false } },
+          lab: true,
+          registrations: true,
+        },
+        orderBy: (b, { desc }) => [desc(b.createdAt)],
+      });
+
+      const scoped = allBookings.filter((b) => labIds.includes(b.labId));
+      res.json(scoped);
+      return;
+    }
+  }
+
   if (typeof status === "string") filters.push(eq(bookings.status, status as any));
-  if (typeof labId === "string") filters.push(eq(bookings.labId, labId));
 
   const allBookings = await db.query.bookings.findMany({
     where: filters.length ? and(...filters) : undefined,
     with: {
-      student: { columns: { passwordHash: false } }, // Exclude password
+      student: { columns: { passwordHash: false } },
       lab: true,
-      registrations: true
+      registrations: true,
     },
-    orderBy: (bookings, { desc }) => [desc(bookings.createdAt)]
+    orderBy: (b, { desc }) => [desc(b.createdAt)],
   });
 
   res.json(allBookings);
 }));
 
+// ─────────────────────────────────────────────────────────────────────────────
 // POST /api/bookings
-// Create a new booking
-router.post("/", requireAuth, asyncHandler(async (req: Request, res: Response) => {
+// Students only — admins manage facilities, they don't create bookings
+// ─────────────────────────────────────────────────────────────────────────────
+router.post("/", requireAuth, requireStudent, asyncHandler(async (req: Request, res: Response) => {
   const { labId, title, description, expectedAttendees, scheduledStart, scheduledEnd } = req.body;
-  const studentId = req.user!.id; // from requireAuth
+  const studentId = req.user!.id;
 
   if (!labId || !title || !expectedAttendees || !scheduledStart || !scheduledEnd) {
     res.status(400).json({ error: "Missing required fields" });
+    return;
+  }
+
+  const start = new Date(scheduledStart);
+  const end = new Date(scheduledEnd);
+
+  if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) {
+    res.status(400).json({ error: "Invalid scheduledStart / scheduledEnd" });
+    return;
+  }
+
+  // Verify the lab exists and is active
+  const lab = await db.query.labs.findFirst({
+    where: and(eq(labs.id, labId), eq(labs.isActive, true)),
+  });
+
+  if (!lab) {
+    res.status(404).json({ error: "Lab not found or is no longer active" });
+    return;
+  }
+
+  // ── Option B conflict check ────────────────────────────────────────────────
+  // Only APPROVED or ACTIVE bookings block the slot.
+  // Multiple pending requests for the same window are allowed — admin decides.
+  // Two windows overlap when: existingStart < newEnd AND existingEnd > newStart
+  const allLabBookings = await db.query.bookings.findMany({
+    where: and(
+      eq(bookings.labId, labId),
+      // status IN ('approved', 'active')
+      or(
+        eq(bookings.status, "approved"),
+        eq(bookings.status, "active")
+      )
+    ),
+  });
+
+  const conflict = allLabBookings.find(
+    (b) => b.scheduledStart < end && b.scheduledEnd > start
+  );
+
+  if (conflict) {
+    const conflictStart = conflict.scheduledStart.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const conflictEnd   = conflict.scheduledEnd.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    res.status(409).json({
+      error: `This lab is already booked from ${conflictStart} to ${conflictEnd}. Please choose a different time slot.`,
+      conflict: {
+        bookingId: conflict.id,
+        scheduledStart: conflict.scheduledStart,
+        scheduledEnd: conflict.scheduledEnd,
+      },
+    });
     return;
   }
 
@@ -50,48 +150,72 @@ router.post("/", requireAuth, asyncHandler(async (req: Request, res: Response) =
     title,
     description,
     expectedAttendees,
-    scheduledStart: new Date(scheduledStart),
-    scheduledEnd: new Date(scheduledEnd),
-    status: "pending"
+    scheduledStart: start,
+    scheduledEnd: end,
+    status: "pending",
   }).returning();
 
   res.status(201).json(newBooking);
 }));
 
+// ─────────────────────────────────────────────────────────────────────────────
 // POST /api/bookings/parse
-// AI-Powered Endpoint: Translates a natural language string into a Lab ID
-router.post("/parse", requireAuth, asyncHandler(async (req: Request, res: Response) => {
-  const { prompt, expectedAttendees } = req.body;
+// AI-Powered: Translates a natural language request into a matched Lab ID
+// Students only — this drives the student chatbot booking flow
+// ─────────────────────────────────────────────────────────────────────────────
+router.post("/parse", requireAuth, requireStudent, asyncHandler(async (req: Request, res: Response) => {
+  const { prompt, expectedAttendees, scheduledStart, scheduledEnd } = req.body;
 
   if (!prompt) {
     res.status(400).json({ error: "Missing 'prompt' in request body" });
     return;
   }
 
-  // 1. Fetch available labs from the DB that can fit the attendees
-  // If expectedAttendees is provided, filter by capacity. Otherwise, fetch all active labs.
-  const labFilters = [eq(labs.isActive, true)];
+  // 1. Fetch active labs with enough capacity
+  const labFilters = [eq(labs.isActive, true), eq(labs.status, "available")];
   if (expectedAttendees) {
     labFilters.push(gte(labs.capacity, expectedAttendees));
   }
 
-  const availableLabs = await db.query.labs.findMany({
+  const candidateLabs = await db.query.labs.findMany({
     where: and(...labFilters),
-    with: { faculty: { columns: { name: true, code: true } } }
+    with: { faculty: { columns: { name: true, code: true } } },
   });
+
+  // 2. If a time window is provided, filter out labs that have an
+  //    approved/active booking that overlaps — Option B conflict check
+  let availableLabs = candidateLabs;
+  if (scheduledStart && scheduledEnd) {
+    const start = new Date(scheduledStart);
+    const end   = new Date(scheduledEnd);
+    if (!isNaN(start.getTime()) && !isNaN(end.getTime()) && end > start) {
+      const blockedBookings = await db.query.bookings.findMany({
+        where: or(
+          eq(bookings.status, "approved"),
+          eq(bookings.status, "active")
+        ),
+      });
+      const blockedLabIds = new Set(
+        blockedBookings
+          .filter((b) => b.scheduledStart < end && b.scheduledEnd > start)
+          .map((b) => b.labId)
+      );
+      availableLabs = candidateLabs.filter((l) => !blockedLabIds.has(l.id));
+    }
+  }
 
   if (availableLabs.length === 0) {
     res.status(404).json({ error: "No labs available that match the capacity requirements." });
     return;
   }
 
-  // 2. Format the labs into a compressed string for Gemini
-  const labsContext = availableLabs.map(l => {
+  // 2. Format the labs into a compressed context string for Gemini
+  const labsContext = availableLabs.map((l) => {
     const tags = (l.aiTags as string[] | null) || [];
     return `ID: ${l.id} | Name: ${l.name} | Faculty: ${l.faculty.name} | Type: ${l.type} | Capacity: ${l.capacity} | Tags: ${tags.join(",")} | Description: ${l.aiDescription}`;
   }).join("\n");
 
-  // 3. Construct the prompt for Gemini
+  // 3. Build the Gemini prompt
   const systemPrompt = `
 You are the AI Facility Manager for Sakarya University (SAÜ-Vision).
 A student is trying to book a room. Their request is: "${prompt}"
@@ -117,32 +241,31 @@ If no lab is a good fit, return null for matchedLabId and explain why in the rea
 
   try {
     const parsedData = JSON.parse(responseText);
-    res.json({
-      originalPrompt: prompt,
-      geminiResult: parsedData
-    });
+    res.json({ originalPrompt: prompt, geminiResult: parsedData });
   } catch (error) {
     console.error("Gemini JSON Parsing Error:", responseText);
     res.status(500).json({ error: "AI returned invalid format", raw: responseText });
   }
 }));
 
+// ─────────────────────────────────────────────────────────────────────────────
 // GET /api/bookings/:id
-// Get details of a specific booking
+// • Student → can only fetch their own booking
+// • Admin   → can fetch any booking in their faculty's labs
+// ─────────────────────────────────────────────────────────────────────────────
 router.get("/:id", requireAuth, asyncHandler(async (req: Request, res: Response) => {
   const bookingId = req.params.id;
+  const { role, id: userId, facultyId } = req.user!;
 
   const booking = await db.query.bookings.findFirst({
     where: eq(bookings.id, bookingId),
     with: {
       student: { columns: { passwordHash: false } },
-      lab: true,
+      lab: { with: { faculty: true } },
       registrations: {
-        with: {
-          student: { columns: { passwordHash: false } }
-        }
-      }
-    }
+        with: { student: { columns: { passwordHash: false } } },
+      },
+    },
   });
 
   if (!booking) {
@@ -150,29 +273,186 @@ router.get("/:id", requireAuth, asyncHandler(async (req: Request, res: Response)
     return;
   }
 
+  // Students can only view their own bookings
+  if (role === "student" && booking.studentId !== userId) {
+    res.status(403).json({ error: "Access denied. This booking does not belong to you." });
+    return;
+  }
+
+  // Admins can only view bookings for labs inside their faculty
+  if (role === "admin" && facultyId) {
+    const labFacultyId = (booking as any).lab?.faculty?.id ?? (booking as any).lab?.facultyId;
+    if (labFacultyId && labFacultyId !== facultyId) {
+      res.status(403).json({ error: "Access denied. This booking is outside your faculty." });
+      return;
+    }
+  }
+
   res.json(booking);
 }));
 
+// ─────────────────────────────────────────────────────────────────────────────
+// PATCH /api/bookings/:id
+// Student only — allows editing a booking ONLY if it is still 'pending'
+// ─────────────────────────────────────────────────────────────────────────────
+router.patch("/:id", requireAuth, requireStudent, asyncHandler(async (req: Request, res: Response) => {
+  const bookingId = req.params.id;
+  const studentId = req.user!.id;
+  const { labId, title, description, expectedAttendees, scheduledStart, scheduledEnd, studentComment } = req.body;
+
+  // 1. Fetch the existing booking
+  const existingBooking = await db.query.bookings.findFirst({
+    where: eq(bookings.id, bookingId),
+  });
+
+  if (!existingBooking) {
+    res.status(404).json({ error: "Booking not found" });
+    return;
+  }
+
+  // 2. Ensure ownership and status
+  if (existingBooking.studentId !== studentId) {
+    res.status(403).json({ error: "Access denied. You can only edit your own bookings." });
+    return;
+  }
+
+  if (existingBooking.status !== "pending" && existingBooking.status !== "approved") {
+    res.status(400).json({ error: "Only pending or approved bookings can be edited." });
+    return;
+  }
+
+  // 3. Gather updates
+  const updates: any = { updatedAt: new Date() };
+
+  // If approved, students can only add/update their comment
+  if (existingBooking.status === "approved") {
+    if (studentComment !== undefined) {
+      updates.studentComment = studentComment;
+    } else {
+      res.status(400).json({ error: "You can only update your comment on an approved booking." });
+      return;
+    }
+  } else {
+    // If pending, they can update everything including comment
+    if (title !== undefined) updates.title = title;
+    if (description !== undefined) updates.description = description;
+    if (expectedAttendees !== undefined) updates.expectedAttendees = expectedAttendees;
+    if (studentComment !== undefined) updates.studentComment = studentComment;
+
+    let start = existingBooking.scheduledStart;
+    let end = existingBooking.scheduledEnd;
+    let timeOrLabChanged = false;
+
+    if (scheduledStart) {
+      start = new Date(scheduledStart);
+      timeOrLabChanged = true;
+    }
+    if (scheduledEnd) {
+      end = new Date(scheduledEnd);
+      timeOrLabChanged = true;
+    }
+    if (labId !== undefined && labId !== existingBooking.labId) {
+      updates.labId = labId;
+      timeOrLabChanged = true;
+    }
+
+    if (timeOrLabChanged) {
+      if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) {
+        res.status(400).json({ error: "Invalid scheduledStart / scheduledEnd" });
+        return;
+      }
+      updates.scheduledStart = start;
+      updates.scheduledEnd = end;
+
+      const targetLabId = labId || existingBooking.labId;
+
+      // Verify the lab exists and is active
+      const lab = await db.query.labs.findFirst({
+        where: and(eq(labs.id, targetLabId), eq(labs.isActive, true)),
+      });
+
+      if (!lab) {
+        res.status(404).json({ error: "Target lab not found or is no longer active" });
+        return;
+      }
+
+      // Option B conflict check
+      const allLabBookings = await db.query.bookings.findMany({
+        where: and(
+          eq(bookings.labId, targetLabId),
+          or(
+            eq(bookings.status, "approved"),
+            eq(bookings.status, "active")
+          )
+        ),
+      });
+
+      const conflict = allLabBookings.find(
+        (b) => b.id !== bookingId && b.scheduledStart < end && b.scheduledEnd > start
+      );
+
+      if (conflict) {
+        const conflictStart = conflict.scheduledStart.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        const conflictEnd   = conflict.scheduledEnd.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        res.status(409).json({
+          error: `This lab is already booked from ${conflictStart} to ${conflictEnd}. Please choose a different time slot.`,
+          conflict: {
+            bookingId: conflict.id,
+            scheduledStart: conflict.scheduledStart,
+            scheduledEnd: conflict.scheduledEnd,
+          },
+        });
+        return;
+      }
+    }
+  }
+
+  const [updatedBooking] = await db
+    .update(bookings)
+    .set(updates)
+    .where(eq(bookings.id, bookingId))
+    .returning();
+
+  res.json(updatedBooking);
+}));
+
+// ─────────────────────────────────────────────────────────────────────────────
 // PATCH /api/bookings/:id/status
-// Admin endpoint to approve/reject a booking
+// Admin only — approve or reject a pending booking
+// Admin must belong to the same faculty as the lab in the booking
+// ─────────────────────────────────────────────────────────────────────────────
 router.patch("/:id/status", requireAuth, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
   const bookingId = req.params.id;
-  const { status } = req.body; // 'approved' or 'rejected'
+  const { status } = req.body;
+  const { facultyId } = req.user!;
 
   if (status !== "approved" && status !== "rejected") {
     res.status(400).json({ error: "Status must be 'approved' or 'rejected'" });
     return;
   }
 
-  const [updatedBooking] = await db.update(bookings)
-    .set({ status, updatedAt: new Date() })
-    .where(eq(bookings.id, bookingId))
-    .returning();
+  // Fetch the booking with its lab to verify faculty ownership
+  const booking = await db.query.bookings.findFirst({
+    where: eq(bookings.id, bookingId),
+    with: { lab: true },
+  });
 
-  if (!updatedBooking) {
+  if (!booking) {
     res.status(404).json({ error: "Booking not found" });
     return;
   }
+
+  // Ensure the admin only approves bookings for their own faculty's labs
+  if (facultyId && (booking as any).lab.facultyId !== facultyId) {
+    res.status(403).json({ error: "Access denied. This booking is outside your faculty." });
+    return;
+  }
+
+  const [updatedBooking] = await db
+    .update(bookings)
+    .set({ status, updatedAt: new Date() })
+    .where(eq(bookings.id, bookingId))
+    .returning();
 
   res.json(updatedBooking);
 }));

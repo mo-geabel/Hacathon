@@ -61,6 +61,10 @@ export const bookings = pgTable("bookings", {
 
   status: bookingStatusEnum("status").notNull().default("pending"),
 
+  // ── Communication ────────────────────────────────────────────────────────────
+  /** Optional comment added by the student after booking is approved */
+  studentComment: text("student_comment"),
+
   // ── Gemini AI Engine ───────────────────────────────────────────────────────
   /** The natural language prompt the student typed (e.g. "I need a lab for 10 people") */
   rawNlRequest: text("raw_nl_request"),

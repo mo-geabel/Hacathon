@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import { db } from "../../db/client";
 import { campusEvents } from "../../db/schema";
 import { eq } from "drizzle-orm";
+import { requireAuth } from "../../middleware/auth";
 
 const router = Router();
 
@@ -9,16 +10,14 @@ const asyncHandler = (fn: Function) => (req: Request, res: Response, next: NextF
   Promise.resolve(fn(req, res, next)).catch(next);
 };
 
-// GET /api/events
-// Return all campus events (public, no auth needed for the map)
+// GET /api/events — public (map is visible without login)
 router.get("/", asyncHandler(async (_req: Request, res: Response) => {
   const events = await db.select().from(campusEvents).orderBy(campusEvents.createdAt);
   res.json(events);
 }));
 
-// POST /api/events
-// Create a new campus event marker
-router.post("/", asyncHandler(async (req: Request, res: Response) => {
+// POST /api/events — auth required (any logged-in user can pin an event)
+router.post("/", requireAuth, asyncHandler(async (req: Request, res: Response) => {
   const { title, description, date, category, mapX, mapY } = req.body;
 
   if (!title || !date || mapX === undefined || mapY === undefined) {
@@ -38,9 +37,8 @@ router.post("/", asyncHandler(async (req: Request, res: Response) => {
   res.status(201).json(newEvent);
 }));
 
-// DELETE /api/events/:id
-// Remove a campus event marker
-router.delete("/:id", asyncHandler(async (req: Request, res: Response) => {
+// DELETE /api/events/:id — auth required (only logged-in users can remove pins)
+router.delete("/:id", requireAuth, asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
 
   const [deleted] = await db.delete(campusEvents)
