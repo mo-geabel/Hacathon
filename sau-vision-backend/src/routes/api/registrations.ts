@@ -1,8 +1,9 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { db } from "../../db/client";
-import { registrations, bookings } from "../../db/schema";
+import { registrations, bookings, students } from "../../db/schema";
 import { eq, and } from "drizzle-orm";
 import { requireAuth, requireStudent } from "../../middleware/auth";
+import { puqAiEvaluateStudent } from "../../services/puqai";
 
 const router = Router();
 
@@ -39,10 +40,30 @@ router.post("/:bookingId", requireAuth, requireStudent, asyncHandler(async (req:
     return;
   }
 
+  // Fetch full student details for puq.ai evaluation
+  const student = await db.query.students.findFirst({
+    where: eq(students.id, studentId)
+  });
+
+  if (!student) {
+    res.status(404).json({ error: "Student not found" });
+    return;
+  }
+
+  // 🤖 Run the puq.ai Automation Pipeline
+  const aiEvaluation = await puqAiEvaluateStudent({
+    fullName: student.fullName,
+    gpa: student.gpa,
+    eventRating: student.eventRating,
+    ghostedEventCount: student.ghostedEventCount
+  });
+
   const [newRegistration] = await db.insert(registrations).values({
     studentId,
     bookingId,
-    status: "registered"
+    status: "pending",
+    aiScore: aiEvaluation.aiScore,
+    aiRecommendation: aiEvaluation.aiRecommendation
   }).returning();
 
   res.status(201).json(newRegistration);

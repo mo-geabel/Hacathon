@@ -4,6 +4,7 @@ import { bookings, labs } from "../../db/schema";
 import { eq, and, gte, lt, or } from "drizzle-orm";
 import { requireAuth, requireAdmin, requireStudent } from "../../middleware/auth";
 import { geminiModel } from "../../services/gemini";
+import axios from "axios";
 
 const router = Router();
 
@@ -215,36 +216,41 @@ router.post("/parse", requireAuth, requireStudent, asyncHandler(async (req: Requ
     return `ID: ${l.id} | Name: ${l.name} | Faculty: ${l.faculty.name} | Type: ${l.type} | Capacity: ${l.capacity} | Tags: ${tags.join(",")} | Description: ${l.aiDescription}`;
   }).join("\n");
 
-  // 3. Build the Gemini prompt
-  const systemPrompt = `
-You are the AI Facility Manager for Sakarya University (SAÜ-Vision).
-A student is trying to book a room. Their request is: "${prompt}"
-
-Here is the list of available laboratories:
-${labsContext}
-
-Your task is to find the single best matching laboratory for this request.
-You MUST return a valid JSON object matching this exact schema:
-{
-  "matchedLabId": "UUID string of the best lab",
-  "confidenceScore": number between 1-100,
-  "reason": "A short, friendly sentence explaining to the student why you chose this lab.",
-  "detectedRequirements": ["list", "of", "requirements", "you", "found", "in", "the", "prompt"]
-}
-
-If no lab is a good fit, return null for matchedLabId and explain why in the reason field.
-`;
-
-  // 4. Call Gemini
-  const result = await geminiModel.generateContent(systemPrompt);
-  const responseText = result.response.text();
-
+  // 3. Call the external puq.ai Webhook
   try {
-    const parsedData = JSON.parse(responseText);
-    res.json({ originalPrompt: prompt, geminiResult: parsedData });
-  } catch (error) {
-    console.error("Gemini JSON Parsing Error:", responseText);
-    res.status(500).json({ error: "AI returned invalid format", raw: responseText });
+    const webhookUrl = process.env.PUQ_AI_WEBHOOK_URL || "https://api.puq.ai/h/a3eb61690eeb/sync";
+    
+    // If puq.ai uses the Dify engine under the hood, it requires variables to be inside "inputs" 
+    // and "response_mode" set to "blocking" for a synchronous JSON response.
+    const response = await axios.post(webhookUrl, {
+      inputs: {
+        student_prompt: prompt,
+        labs_context: labsContext
+      },
+      response_mode: "blocking",
+      user: req.user?.id || "anonymous"
+    }, {
+      // Dify workflows require the API Key in the Authorization header
+      headers: {
+        "Authorization": `Bearer ${process.env.PUQ_AI_API_KEY || ""}`,
+        "Content-Type": "application/json"
+      }
+    });
+
+    // We assume the puq.ai workflow directly returns the JSON object we requested
+    const parsedData = response.data;
+    
+    // If the workflow returns it as a stringified JSON inside a text field, we'd parse it here.
+    // Assuming puq.ai returns proper JSON headers:
+    const geminiResult = typeof parsedData === "string" ? JSON.parse(parsedData) : parsedData;
+
+    res.json({
+      originalPrompt: prompt,
+      geminiResult
+    });
+  } catch (error: any) {
+    console.error("puq.ai Webhook Error:", error?.response?.data || error.message);
+    res.status(500).json({ error: "External AI Workflow failed", details: error.message });
   }
 }));
 
