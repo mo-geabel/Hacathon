@@ -244,41 +244,103 @@ router.post("/parse", requireAuth, requireStudent, asyncHandler(async (req: Requ
     return `ID: ${l.id} | Name: ${l.name} | Faculty: ${l.faculty.name} | Type: ${l.type} | Capacity: ${l.capacity} | Tags: ${tags.join(",")} | Description: ${l.aiDescription}`;
   }).join("\n");
 
-  // 3. Call the external puq.ai Webhook
+  // 3. Call Gemini AI to analyze the request and suggest the top 3 labs
   try {
-    const webhookUrl = process.env.PUQ_AI_WEBHOOK_URL || "https://api.puq.ai/h/a3eb61690eeb/sync";
-    
-    // If puq.ai uses the Dify engine under the hood, it requires variables to be inside "inputs" 
-    // and "response_mode" set to "blocking" for a synchronous JSON response.
-    const response = await axios.post(webhookUrl, {
-      inputs: {
-        student_prompt: prompt,
-        labs_context: labsContext
-      },
-      response_mode: "blocking",
-      user: req.user?.id || "anonymous"
-    }, {
-      // Dify workflows require the API Key in the Authorization header
-      headers: {
-        "Authorization": `Bearer ${process.env.PUQ_AI_API_KEY || ""}`,
-        "Content-Type": "application/json"
-      }
-    });
+    const aiPrompt = `
+You are an intelligent university lab booking assistant at Sakarya University (SAÜ).
+A student has made the following request: "${prompt}"
 
-    // We assume the puq.ai workflow directly returns the JSON object we requested
-    const parsedData = response.data;
+Here is the list of currently available labs in the university:
+${labsContext}
+
+Your task:
+1. Analyze the student's request — consider capacity, equipment, software (Python, MATLAB, etc.), lab type, and any faculty preference.
+2. Rank the TOP 3 best-matching labs from the list above. If fewer than 3 labs are available, return only those that exist.
+3. For each suggestion, explain WHY it is a good fit (or why it is not perfect but still acceptable).
+4. Extract a short title and description for the booking based on the student's request.
+5. Extract or suggest an appropriate number of attendees.
+
+You MUST respond ONLY with a valid JSON object matching this exact structure:
+{
+  "suggestions": [
+    {
+      "rank": 1,
+      "labId": "the-uuid-of-the-lab",
+      "labName": "Human readable lab name",
+      "facultyName": "Faculty name",
+      "matchScore": 95,
+      "reasoning": "Why this lab is the best fit"
+    },
+    {
+      "rank": 2,
+      "labId": "second-best-uuid",
+      "labName": "Second lab name",
+      "facultyName": "Faculty name",
+      "matchScore": 80,
+      "reasoning": "Why this is the second choice"
+    },
+    {
+      "rank": 3,
+      "labId": "third-best-uuid",
+      "labName": "Third lab name",
+      "facultyName": "Faculty name",
+      "matchScore": 60,
+      "reasoning": "Why this is still acceptable"
+    }
+  ],
+  "bookingDetails": {
+    "extractedTitle": "A concise title for the booking",
+    "extractedDescription": "A longer description of what the student needs",
+    "suggestedAttendees": 10
+  }
+}
+
+matchScore should be 0-100 where 100 is a perfect match.
+If a lab does not match well at all, do NOT include it in the suggestions — only return labs that are at least somewhat relevant.
+If no lab matches, return an empty "suggestions" array and explain in "bookingDetails.extractedDescription".
+    `;
+
+    const result = await geminiModel.generateContent(aiPrompt);
+    const responseText = result.response.text();
     
-    // If the workflow returns it as a stringified JSON inside a text field, we'd parse it here.
-    // Assuming puq.ai returns proper JSON headers:
-    const geminiResult = typeof parsedData === "string" ? JSON.parse(parsedData) : parsedData;
+    // Gemini in JSON mode guarantees valid JSON
+    const geminiResult = JSON.parse(responseText);
+
+    // 4. Enrich each suggestion with REAL lab data from the database
+    //    This ensures the frontend gets full lab details (capacity, type, floor, room, etc.)
+    //    and protects against any Gemini hallucination of non-existent IDs.
+    const enrichedSuggestions = [];
+    for (const suggestion of geminiResult.suggestions || []) {
+      const dbLab = availableLabs.find(l => l.id === suggestion.labId);
+      if (dbLab) {
+        enrichedSuggestions.push({
+          ...suggestion,
+          lab: {
+            id: dbLab.id,
+            name: dbLab.name,
+            type: dbLab.type,
+            capacity: dbLab.capacity,
+            floor: (dbLab as any).floor ?? null,
+            roomNumber: (dbLab as any).roomNumber ?? null,
+            status: dbLab.status,
+            faculty: dbLab.faculty,
+            aiTags: dbLab.aiTags,
+            aiDescription: dbLab.aiDescription,
+          }
+        });
+      }
+      // If the lab ID doesn't exist in the DB, skip it (Gemini hallucinated)
+    }
 
     res.json({
       originalPrompt: prompt,
-      geminiResult
+      availableLabCount: availableLabs.length,
+      suggestions: enrichedSuggestions,
+      bookingDetails: geminiResult.bookingDetails
     });
   } catch (error: any) {
-    console.error("puq.ai Webhook Error:", error?.response?.data || error.message);
-    res.status(500).json({ error: "External AI Workflow failed", details: error.message });
+    console.error("Gemini AI Error:", error?.response?.data || error.message);
+    res.status(500).json({ error: "AI Parsing failed", details: error.message });
   }
 }));
 
