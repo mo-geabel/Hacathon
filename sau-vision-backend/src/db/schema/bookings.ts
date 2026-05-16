@@ -100,16 +100,23 @@ export const bookings = pgTable("bookings", {
 });
 
 // ─── Relations ────────────────────────────────────────────────────────────────
-export const bookingsRelations = relations(bookings, ({ one }) => ({
-  student: one(students, {
-    fields: [bookings.studentId],
-    references: [students.id],
-  }),
-  lab: one(labs, {
-    fields: [bookings.labId],
-    references: [labs.id],
-  }),
-}));
+// Note: `registrations` is lazy-imported to avoid a circular dependency
+// (registrations.ts imports bookings.ts, so we cannot import it at the top)
+export const bookingsRelations = relations(bookings, ({ one, many }) => {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { registrations } = require("./registrations");
+  return {
+    student: one(students, {
+      fields: [bookings.studentId],
+      references: [students.id],
+    }),
+    lab: one(labs, {
+      fields: [bookings.labId],
+      references: [labs.id],
+    }),
+    registrations: many(registrations),
+  };
+});
 
 export type Booking = typeof bookings.$inferSelect;
 export type NewBooking = typeof bookings.$inferInsert;

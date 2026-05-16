@@ -73,14 +73,5 @@ export const registrationsRelations = relations(registrations, ({ one }) => ({
   }),
 }));
 
-/** We also need to add the reverse relations so we can query them easily */
-export const bookingHasManyRegistrations = relations(bookings, ({ many }) => ({
-  registrations: many(registrations),
-}));
-
-export const studentHasManyRegistrations = relations(students, ({ many }) => ({
-  registrations: many(registrations),
-}));
-
 export type Registration = typeof registrations.$inferSelect;
 export type NewRegistration = typeof registrations.$inferInsert;
