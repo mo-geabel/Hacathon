@@ -1,21 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import {
   MapContainer,
-  ImageOverlay,
+  TileLayer,
   CircleMarker,
+  Marker,
   Popup,
   useMapEvents,
 } from 'react-leaflet';
-import { CRS, type LatLngBoundsExpression } from 'leaflet';
-import type { CampusEvent } from '../../types';
+import L from 'leaflet';
+import type { CampusEvent, Room } from '../../types';
 import EventFormModal from './EventFormModal';
 import api from '../../lib/api';
 import { Trash2, Info } from 'lucide-react';
 
-// ── Campus image dimensions (adjust if your image is different) ──────────────
-const IMAGE_WIDTH = 1040;
-const IMAGE_HEIGHT = 530;
-const BOUNDS: LatLngBoundsExpression = [[0, 0], [IMAGE_HEIGHT, IMAGE_WIDTH]];
+// ── Sakarya University center coordinate ──────────────────────────────────────
+const SAU_CENTER: [number, number] = [40.7419, 30.3262];
 
 // ── Category color map ────────────────────────────────────────────────────────
 const CATEGORY_COLORS: Record<CampusEvent['category'], string> = {
@@ -30,21 +29,95 @@ function MapClickHandler({ enabled, onMapClick }: { enabled: boolean; onMapClick
   useMapEvents({
     click(e) {
       if (!enabled) return;
-      onMapClick(e.latlng.lng, e.latlng.lat); // CRS.Simple: lng=X, lat=Y
+      onMapClick(e.latlng.lng, e.latlng.lat); // real lng=X, lat=Y
     },
   });
   return null;
 }
 
+// ── Helper: Occupancy color ───────────────────────────────────────────────────
+const getOccupancyColor = (percent: number) => {
+  if (percent < 30) return '#10b981'; // Emerald/Green
+  if (percent < 70) return '#eab308'; // Yellow
+  return '#ef4444'; // Red
+};
+
+// ── Helper: Custom Faculty Icon ───────────────────────────────────────────────
+const getFacultyIcon = (color: string) => {
+  const html = `
+    <div style="background-color: ${color};" class="w-10 h-10 rounded-xl shadow-lg border-2 border-white flex items-center justify-center text-white transform transition-transform hover:scale-110">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect>
+        <path d="M9 22v-4h6v4"></path>
+        <path d="M8 6h.01"></path>
+        <path d="M16 6h.01"></path>
+        <path d="M12 6h.01"></path>
+        <path d="M12 10h.01"></path>
+        <path d="M12 14h.01"></path>
+        <path d="M16 10h.01"></path>
+        <path d="M16 14h.01"></path>
+        <path d="M8 10h.01"></path>
+        <path d="M8 14h.01"></path>
+      </svg>
+    </div>
+  `;
+  return L.divIcon({
+    html,
+    className: 'bg-transparent border-none',
+    iconSize: [40, 40],
+    iconAnchor: [20, 40],
+    popupAnchor: [0, -42],
+  });
+};
+
 // ── Main Component ────────────────────────────────────────────────────────────
 interface CampusImageMapProps {
   enableEventMode: boolean;
+  rooms?: Room[];
+  selectedFacultyId?: string | null;
+  onFacultySelect?: (facultyId: string) => void;
+  onClearFaculty?: () => void;
+  onRoomClick?: (room: Room) => void;
 }
 
-export default function CampusImageMap({ enableEventMode }: CampusImageMapProps) {
+export default function CampusImageMap({ 
+  enableEventMode, 
+  rooms = [], 
+  selectedFacultyId,
+  onFacultySelect,
+  onClearFaculty,
+  onRoomClick 
+}: CampusImageMapProps) {
   const [events, setEvents] = useState<CampusEvent[]>([]);
   const [pendingPin, setPendingPin] = useState<{ x: number; y: number } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Group rooms into faculties
+  const faculties = React.useMemo(() => {
+    const map = new Map<string, { id: string; name: string; lat: number; lng: number; rooms: Room[]; avgOccupancy: number }>();
+    
+    rooms.forEach(room => {
+      const fId = room.facultyId || 'unknown';
+      const fName = room.facultyName || 'Unknown Faculty';
+      if (!map.has(fId)) {
+        map.set(fId, {
+          id: fId,
+          name: fName,
+          lat: room.lat || SAU_CENTER[0],
+          lng: room.lng || SAU_CENTER[1],
+          rooms: [],
+          avgOccupancy: 0,
+        });
+      }
+      map.get(fId)!.rooms.push(room);
+    });
+
+    return Array.from(map.values()).map(f => {
+      const totalOcc = f.rooms.reduce((acc, r) => acc + r.occupancyPercent, 0);
+      f.avgOccupancy = f.rooms.length > 0 ? Math.round(totalOcc / f.rooms.length) : 0;
+      return f;
+    });
+  }, [rooms]);
 
   // Fetch events from backend on mount
   useEffect(() => {
@@ -113,22 +186,29 @@ export default function CampusImageMap({ enableEventMode }: CampusImageMapProps)
         </div>
       )}
 
+      {/* Back to Faculties Overlay */}
+      {selectedFacultyId && (
+        <div className="absolute top-3 left-3 z-[1000]">
+          <button
+            onClick={() => onClearFaculty?.()}
+            className="flex items-center gap-2 px-3 py-2 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg text-sm font-medium text-gray-700 hover:bg-white border border-gray-200 transition-colors"
+          >
+            ← Back to Faculties
+          </button>
+        </div>
+      )}
+
       <MapContainer
-        crs={CRS.Simple}
-        bounds={BOUNDS}
-        style={{ height: '100%', width: '100%', background: '#0a1628' }}
-        maxBounds={BOUNDS}
-        maxBoundsViscosity={1.0}
-        minZoom={-1}
-        maxZoom={2}
+        center={SAU_CENTER}
+        zoom={15}
+        style={{ height: '100%', width: '100%', background: '#ffffff' }}
         scrollWheelZoom
-        className={enableEventMode ? 'cursor-crosshair' : ''}
+        className={enableEventMode ? 'cursor-crosshair z-0' : 'z-0'}
       >
-        {/* Campus image as base layer */}
-        <ImageOverlay
-          url="/images/campus-map.jpg"
-          bounds={BOUNDS}
-          opacity={1}
+        {/* Real Map Tiles */}
+        <TileLayer
+          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
         />
 
         {/* Click handler */}
@@ -137,9 +217,9 @@ export default function CampusImageMap({ enableEventMode }: CampusImageMapProps)
         {/* Event markers from DB */}
         {events.map(event => (
           <CircleMarker
-            key={event.id}
+            key={`event-${event.id}`}
             center={[event.mapY, event.mapX]}
-            radius={10}
+            radius={8}
             pathOptions={{
               fillColor: CATEGORY_COLORS[event.category],
               fillOpacity: 0.9,
@@ -175,6 +255,83 @@ export default function CampusImageMap({ enableEventMode }: CampusImageMapProps)
             </Popup>
           </CircleMarker>
         ))}
+
+        {/* Faculty markers */}
+        {!selectedFacultyId && faculties.map((faculty) => {
+          const color = getOccupancyColor(faculty.avgOccupancy);
+          return (
+            <Marker
+              key={`faculty-${faculty.id}`}
+              position={[faculty.lat, faculty.lng]}
+              icon={getFacultyIcon(color)}
+              eventHandlers={{
+                click: () => onFacultySelect?.(faculty.id)
+              }}
+            >
+              <Popup>
+                <div className="min-w-[150px] p-1 text-center">
+                  <h3 className="font-bold text-gray-900 text-base mb-1">{faculty.name}</h3>
+                  <p className="text-sm text-gray-600 mb-3">{faculty.rooms.length} Labs Available</p>
+                  
+                  <div className="flex justify-between items-center mb-3 text-xs bg-gray-50 p-1.5 rounded">
+                    <span className="text-gray-600 font-medium">Avg Occupancy</span>
+                    <span style={{ color }} className="font-bold">{faculty.avgOccupancy}%</span>
+                  </div>
+
+                  <button
+                    onClick={() => onFacultySelect?.(faculty.id)}
+                    className="w-full py-1.5 bg-electric-600 hover:bg-electric-700 text-white text-xs font-medium rounded-md transition-colors"
+                  >
+                    View Labs
+                  </button>
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
+
+        {/* Room markers for selected faculty */}
+        {selectedFacultyId && rooms.filter(r => (r.facultyId || 'unknown') === selectedFacultyId).map((room, i) => {
+          // Add a tiny deterministic jitter so rooms in the same faculty don't overlap completely
+          const jitterLat = (room.lat || SAU_CENTER[0]) + (Math.sin(i * 100) * 0.0004);
+          const jitterLng = (room.lng || SAU_CENTER[1]) + (Math.cos(i * 100) * 0.0004);
+          const color = getOccupancyColor(room.occupancyPercent);
+          
+          return (
+            <CircleMarker
+              key={`room-${room.id}`}
+              center={[jitterLat, jitterLng]}
+              radius={9}
+              pathOptions={{
+                fillColor: color,
+                fillOpacity: 0.8,
+                color: '#ffffff',
+                weight: 2,
+              }}
+            >
+              <Popup>
+                <div className="min-w-[180px] p-1">
+                  <h3 className="font-bold text-gray-900 text-base mb-1">{room.name}</h3>
+                  <p className="text-xs text-gray-500 mb-3">{room.location}</p>
+                  
+                  <div className="flex justify-between items-center mb-3 text-sm">
+                    <span className="text-gray-600 font-medium">Occupancy</span>
+                    <span style={{ color }} className="font-bold">{room.occupancyPercent}%</span>
+                  </div>
+                  
+                  {onRoomClick && (
+                    <button
+                      onClick={() => onRoomClick(room)}
+                      className="w-full py-1.5 bg-electric-600 hover:bg-electric-700 text-white text-xs font-medium rounded-md transition-colors"
+                    >
+                      Book Room
+                    </button>
+                  )}
+                </div>
+              </Popup>
+            </CircleMarker>
+          );
+        })}
 
         {/* Pending pin (preview while modal is open) */}
         {pendingPin && (

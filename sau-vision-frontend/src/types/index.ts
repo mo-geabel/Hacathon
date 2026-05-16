@@ -8,6 +8,8 @@ export interface Room {
   location: string;
   lat?: number;
   lng?: number;
+  facultyName?: string;
+  facultyId?: string;
 }
 
 export interface CampusEvent {

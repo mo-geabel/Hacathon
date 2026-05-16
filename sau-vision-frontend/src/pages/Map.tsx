@@ -17,6 +17,7 @@ export default function MapPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [eventMode, setEventMode] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
+  const [selectedFacultyId, setSelectedFacultyId] = useState<string | null>(null);
 
   // If user logs out while event mode is active, turn it off
   useEffect(() => {
@@ -38,6 +39,8 @@ export default function MapPage() {
           location: `${lab.faculty?.name || 'Unknown Faculty'}, Floor ${lab.floor}, Room ${lab.roomNumber}`,
           lat: lab.faculty?.latitude || 40.7437,
           lng: lab.faculty?.longitude || 30.3330,
+          facultyName: lab.faculty?.name || 'Unknown Faculty',
+          facultyId: lab.faculty?.id,
         }));
         setRooms(mappedRooms);
       } catch (error) {
@@ -52,11 +55,15 @@ export default function MapPage() {
     return () => clearInterval(pollInterval);
   }, []);
 
-  const filteredRooms = rooms.filter(room =>
-    room.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    room.hardware.some(hw => hw.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    room.location.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredRooms = rooms.filter(room => {
+    const matchesSearch = room.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      room.hardware.some(hw => hw.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      room.location.toLowerCase().includes(searchQuery.toLowerCase());
+      
+    const matchesFaculty = selectedFacultyId ? (room.facultyId || 'unknown') === selectedFacultyId : true;
+    
+    return matchesSearch && matchesFaculty;
+  });
 
   return (
     <div className="min-h-screen bg-navy-900 pt-24 pb-12 px-4 sm:px-6 lg:px-8">
@@ -70,55 +77,6 @@ export default function MapPage() {
           </div>
 
           <div className="w-full lg:w-auto flex flex-col sm:flex-row items-center gap-4">
-
-            {/* View Toggle */}
-            <div className="flex bg-navy-800 p-1 rounded-lg border border-white/5 w-full sm:w-auto">
-              <button
-                onClick={() => setViewMode('both')}
-                className={`flex-1 sm:flex-none px-4 py-1.5 text-sm rounded-md transition-colors ${viewMode === 'both' ? 'bg-electric-600 text-white' : 'text-gray-400 hover:text-white'}`}
-              >
-                Split
-              </button>
-              <button
-                onClick={() => setViewMode('map')}
-                className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-1.5 text-sm rounded-md transition-colors ${viewMode === 'map' ? 'bg-electric-600 text-white' : 'text-gray-400 hover:text-white'}`}
-              >
-                <MapPin className="w-3.5 h-3.5" /> Map
-              </button>
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-1.5 text-sm rounded-md transition-colors ${viewMode === 'grid' ? 'bg-electric-600 text-white' : 'text-gray-400 hover:text-white'}`}
-              >
-                <Grid className="w-3.5 h-3.5" /> Grid
-              </button>
-            </div>
-
-            {/* Pin Event — only visible to authenticated users */}
-            {isAuthenticated ? (
-              <button
-                id="pin-event-btn"
-                onClick={() => setEventMode(prev => !prev)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all border ${
-                  eventMode
-                    ? 'bg-electric-500/20 text-electric-300 border-electric-500/30 ring-1 ring-electric-500/40'
-                    : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10'
-                }`}
-              >
-                {eventMode ? <X className="w-4 h-4" /> : <PlusCircle className="w-4 h-4" />}
-                {eventMode ? 'Cancel Pin' : 'Pin Event'}
-              </button>
-            ) : (
-              /* Unauthenticated users see a disabled button prompting sign-in */
-              <Link
-                to="/login?returnTo=/map"
-                id="pin-event-login-prompt"
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border bg-white/5 text-gray-500 border-white/10 hover:bg-electric-500/10 hover:text-electric-400 hover:border-electric-500/30 transition-all"
-                title="Sign in to pin events"
-              >
-                <Lock className="w-4 h-4" />
-                Sign in to Pin
-              </Link>
-            )}
 
             {/* Search */}
             <div className="relative w-full sm:w-64">
@@ -137,30 +95,46 @@ export default function MapPage() {
           </div>
         </div>
 
-        {/* Legend Row */}
-        <div className="flex flex-wrap items-center gap-4 mb-6">
-          <OccupancyLegend />
-          <div className="flex items-center gap-3 ml-auto">
-            {[
-              { cat: 'Academic', color: '#3b82f6' },
-              { cat: 'Sports', color: '#10b981' },
-              { cat: 'Social', color: '#a855f7' },
-              { cat: 'Other', color: '#f97316' },
-            ].map(({ cat, color }) => (
-              <div key={cat} className="flex items-center gap-1.5 text-xs text-gray-400">
-                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
-                {cat}
+        {/* Active Faculty Filter Indicator */}
+        {selectedFacultyId && (
+          <div className="mb-6 flex items-center justify-between bg-electric-500/10 border border-electric-500/20 px-4 py-3 rounded-lg">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-electric-500/20 flex items-center justify-center">
+                <MapPin className="w-4 h-4 text-electric-400" />
               </div>
-            ))}
+              <div>
+                <p className="text-sm text-electric-300 font-medium">Viewing labs for selected faculty</p>
+                <p className="text-xs text-gray-400">{filteredRooms.length} labs found</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setSelectedFacultyId(null)}
+              className="text-xs px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white rounded-md transition-colors"
+            >
+              Clear Filter
+            </button>
           </div>
-        </div>
+        )}
+
 
         {/* Content Area */}
         <div className="space-y-8">
           {(viewMode === 'both' || viewMode === 'map') && (
             <div className="h-[500px] lg:h-[600px] w-full animate-fade-in relative z-0 rounded-xl overflow-hidden border border-white/10 shadow-2xl">
               {/* enableEventMode is always false for unauthenticated users (enforced above) */}
-              <CampusImageMap enableEventMode={eventMode} />
+              <CampusImageMap 
+                enableEventMode={eventMode}
+                rooms={rooms} // Pass all rooms so the map always knows about all faculties
+                selectedFacultyId={selectedFacultyId}
+                onFacultySelect={(fid) => {
+                  setSelectedFacultyId(fid);
+                  if (viewMode === 'map') setViewMode('both');
+                  // Scroll to grid slightly
+                  setTimeout(() => window.scrollBy({ top: 400, behavior: 'smooth' }), 100);
+                }}
+                onRoomClick={isAuthenticated ? (room) => setSelectedRoom(room) : undefined}
+                onClearFaculty={() => setSelectedFacultyId(null)}
+              />
             </div>
           )}
 
