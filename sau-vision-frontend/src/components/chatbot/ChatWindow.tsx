@@ -215,14 +215,14 @@ export default function ChatWindow() {
   };
 
   return (
-    <div className="flex flex-col h-[600px] bg-navy-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+    <div className="flex flex-col h-[600px] bg-background border border-border rounded-2xl overflow-hidden shadow-2xl">
       {/* Header */}
-      <div className="px-6 py-4 bg-navy-800 border-b border-white/5 flex items-center gap-3">
+      <div className="px-6 py-4 bg-white dark:bg-navy-800 border-b border-slate-200 dark:border-white/5 flex items-center gap-3">
         <div className="w-10 h-10 rounded-full bg-electric-500/20 flex items-center justify-center border border-electric-500/30">
           <Sparkles className="w-5 h-5 text-electric-400" />
         </div>
         <div>
-          <h2 className="text-white font-semibold">AI Assistant</h2>
+          <h2 className="text-foreground font-semibold">AI Assistant</h2>
           <p className="text-xs text-electric-400 flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Powered by Gemini
           </p>
@@ -253,7 +253,7 @@ export default function ChatWindow() {
         ))}
 
         {isTyping && (
-          <div className="flex gap-2 items-center text-gray-400 text-sm animate-pulse ml-12">
+          <div className="flex gap-2 items-center text-slate-500 dark:text-gray-400 text-sm animate-pulse ml-12">
             <Loader2 className="w-4 h-4 animate-spin" /> Gemini is thinking...
           </div>
         )}
@@ -261,19 +261,19 @@ export default function ChatWindow() {
       </div>
 
       {/* Input */}
-      <div className="p-4 bg-navy-800 border-t border-white/5">
+      <div className="p-4 bg-white dark:bg-navy-800 border-t border-slate-200 dark:border-white/5">
         <form onSubmit={handleSend} className="relative flex items-center">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="e.g. I need a lab with MATLAB for 20 students tomorrow at 2 PM"
-            className="w-full bg-navy-900 border border-white/10 rounded-full py-3.5 pl-5 pr-14 text-sm text-white focus:outline-none focus:ring-2 focus:ring-electric-500 focus:border-transparent placeholder-gray-500 shadow-inner"
+            className="w-full bg-background border border-border rounded-full py-3.5 pl-5 pr-14 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-electric-500 focus:border-transparent placeholder-gray-500 shadow-inner"
           />
           <button
             type="submit"
             disabled={!input.trim() || isTyping}
-            className="absolute right-2 p-2 bg-electric-500 text-white rounded-full hover:bg-electric-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="absolute right-2 p-2 bg-electric-500 text-foreground rounded-full hover:bg-electric-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Send className="w-4 h-4 ml-0.5" />
           </button>

@@ -10,7 +10,7 @@ interface DensityGridProps {
 export default function DensityGrid({ rooms, onBook }: DensityGridProps) {
   if (rooms.length === 0) {
     return (
-      <div className="text-center py-12 text-gray-400">
+      <div className="text-center py-12 text-slate-500 dark:text-gray-400">
         No rooms found matching your criteria.
       </div>
     );

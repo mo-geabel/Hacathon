@@ -16,7 +16,7 @@ export default function MessageBubble({ content, role, timestamp }: MessageBubbl
       {/* Avatar */}
       <div className={cn(
         "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-1",
-        isUser ? "bg-electric-500 text-white" : "bg-navy-800 border border-white/10 text-electric-400 glow-blue-sm"
+        isUser ? "bg-electric-500 text-foreground" : "bg-white dark:bg-navy-800 border border-border text-electric-400 glow-blue-sm"
       )}>
         {isUser ? <User className="w-5 h-5" /> : <Bot className="w-5 h-5" />}
       </div>
@@ -29,14 +29,14 @@ export default function MessageBubble({ content, role, timestamp }: MessageBubbl
         <div className={cn(
           "px-4 py-2.5 rounded-2xl text-sm leading-relaxed",
           isUser 
-            ? "bg-electric-500 text-white rounded-tr-sm" 
-            : "bg-navy-800 border border-white/10 text-gray-200 rounded-tl-sm shadow-sm"
+            ? "bg-electric-500 text-foreground rounded-tr-sm" 
+            : "bg-white dark:bg-navy-800 border border-border text-gray-200 rounded-tl-sm shadow-sm"
         )}>
           {content}
         </div>
         
         {timestamp && (
-          <span className="text-[10px] text-gray-500 px-1">
+          <span className="text-[10px] text-slate-400 dark:text-gray-500 px-1">
             {timestamp}
           </span>
         )}

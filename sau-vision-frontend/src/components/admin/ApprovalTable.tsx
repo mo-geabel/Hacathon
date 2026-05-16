@@ -23,8 +23,8 @@ export default function ApprovalTable({ bookings, onApprove, onReject }: Approva
         <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mb-4">
           <ShieldCheck className="w-8 h-8 text-emerald-400" />
         </div>
-        <h3 className="text-xl font-semibold text-white mb-2">All Caught Up!</h3>
-        <p className="text-gray-400">There are no pending booking requests right now.</p>
+        <h3 className="text-xl font-semibold text-foreground mb-2">All Caught Up!</h3>
+        <p className="text-slate-500 dark:text-gray-400">There are no pending booking requests right now.</p>
       </div>
     );
   }
@@ -33,7 +33,7 @@ export default function ApprovalTable({ bookings, onApprove, onReject }: Approva
     <div className="glass-card overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
-          <thead className="bg-navy-800/50 text-gray-400 border-b border-white/5 uppercase text-xs tracking-wider">
+          <thead className="bg-white dark:bg-navy-800/50 text-slate-500 dark:text-gray-400 border-b border-slate-200 dark:border-white/5 uppercase text-xs tracking-wider">
             <tr>
               <th className="px-6 py-4 font-medium">Student / Time</th>
               <th className="px-6 py-4 font-medium">Room</th>
@@ -45,13 +45,13 @@ export default function ApprovalTable({ bookings, onApprove, onReject }: Approva
             {bookings.map((booking) => (
               <tr key={booking.id} className="hover:bg-white/[0.02] transition-colors group">
                 <td className="px-6 py-4">
-                  <div className="font-medium text-white">{booking.studentName || booking.studentId}</div>
-                  <div className="text-gray-400 flex items-center gap-1.5 mt-1 text-xs">
+                  <div className="font-medium text-foreground">{booking.studentName || booking.studentId}</div>
+                  <div className="text-slate-500 dark:text-gray-400 flex items-center gap-1.5 mt-1 text-xs">
                     <Clock className="w-3 h-3" />
                     {booking.date} at {booking.time} ({booking.duration}m)
                   </div>
                 </td>
-                <td className="px-6 py-4 text-gray-300 font-medium">
+                <td className="px-6 py-4 text-slate-600 dark:text-gray-300 font-medium">
                   {booking.roomName || 'Unknown Room'}
                 </td>
                 <td className="px-6 py-4">

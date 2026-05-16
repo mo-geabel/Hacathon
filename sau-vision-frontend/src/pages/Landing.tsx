@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Activity, Map, ShieldCheck, Zap, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ThemeToggle } from '../components/ThemeToggle';
 import api from '../lib/api';
 
 const HERO_IMAGES = [
@@ -56,18 +57,19 @@ export default function Landing() {
   const goToPrev = () => goToSlide((currentSlide - 1 + HERO_IMAGES.length) % HERO_IMAGES.length);
 
   return (
-    <div className="min-h-screen bg-navy-900 text-white overflow-hidden selection:bg-electric-500/30">
+    <div className="min-h-screen bg-background text-foreground overflow-hidden selection:bg-electric-500/30">
 
       {/* Navbar */}
       <nav className="absolute top-0 left-0 right-0 p-6 flex justify-between items-center z-50">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-electric-500 rounded-lg flex items-center justify-center glow-blue">
-            <Activity className="w-5 h-5 text-white" />
+            <Activity className="w-5 h-5 text-foreground" />
           </div>
           <span className="text-xl font-bold tracking-tight drop-shadow-lg">SAÜ-Vision</span>
         </div>
         <div className="flex gap-4 items-center">
-          <Link to="/map" className="text-sm font-medium text-white/80 hover:text-white transition-colors drop-shadow">
+          <ThemeToggle />
+          <Link to="/map" className="text-sm font-medium text-foreground/80 hover:text-foreground transition-colors drop-shadow">
             Campus Map
           </Link>
           <Link to="/login" className="btn-primary flex items-center gap-2 text-sm px-5 py-2">
@@ -130,13 +132,13 @@ export default function Landing() {
         {/* Slideshow Controls */}
         <button
           onClick={goToPrev}
-          className="absolute left-4 top-1/2 -translate-y-1/2 z-40 p-2 rounded-full bg-black/30 hover:bg-black/50 backdrop-blur-sm text-white border border-white/10 transition-all"
+          className="absolute left-4 top-1/2 -translate-y-1/2 z-40 p-2 rounded-full bg-black/30 hover:bg-black/50 backdrop-blur-sm text-foreground border border-border transition-all"
         >
           <ChevronLeft className="w-6 h-6" />
         </button>
         <button
           onClick={goToNext}
-          className="absolute right-4 top-1/2 -translate-y-1/2 z-40 p-2 rounded-full bg-black/30 hover:bg-black/50 backdrop-blur-sm text-white border border-white/10 transition-all"
+          className="absolute right-4 top-1/2 -translate-y-1/2 z-40 p-2 rounded-full bg-black/30 hover:bg-black/50 backdrop-blur-sm text-foreground border border-border transition-all"
         >
           <ChevronRight className="w-6 h-6" />
         </button>
@@ -157,30 +159,30 @@ export default function Landing() {
         </div>
 
         {/* Caption */}
-        <div className="absolute bottom-14 left-1/2 -translate-x-1/2 z-40 text-xs text-white/50 tracking-widest uppercase">
+        <div className="absolute bottom-14 left-1/2 -translate-x-1/2 z-40 text-xs text-foreground/50 tracking-widest uppercase">
           {HERO_IMAGES[currentSlide].caption}
         </div>
       </section>
 
       {/* Live Stats Ticker */}
-      <section className="border-y border-white/5 bg-navy-800/60 backdrop-blur-sm">
+      <section className="border-y border-slate-200 dark:border-white/5 bg-white dark:bg-navy-800/60 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 py-8 text-center">
             <div>
-              <div className="text-4xl font-bold text-white mb-1">{stats.totalRooms}</div>
-              <div className="text-sm text-gray-400 uppercase tracking-wider">Connected Rooms</div>
+              <div className="text-4xl font-bold text-foreground mb-1">{stats.totalRooms}</div>
+              <div className="text-sm text-slate-500 dark:text-gray-400 uppercase tracking-wider">Connected Rooms</div>
             </div>
             <div>
               <div className="text-4xl font-bold text-electric-400 mb-1">{stats.activeSessions}</div>
-              <div className="text-sm text-gray-400 uppercase tracking-wider">Active Sessions</div>
+              <div className="text-sm text-slate-500 dark:text-gray-400 uppercase tracking-wider">Active Sessions</div>
             </div>
             <div>
-              <div className="text-4xl font-bold text-white mb-1">99%</div>
-              <div className="text-sm text-gray-400 uppercase tracking-wider">Uptime</div>
+              <div className="text-4xl font-bold text-foreground mb-1">99%</div>
+              <div className="text-sm text-slate-500 dark:text-gray-400 uppercase tracking-wider">Uptime</div>
             </div>
             <div>
-              <div className="text-4xl font-bold text-white mb-1">&lt;1s</div>
-              <div className="text-sm text-gray-400 uppercase tracking-wider">IoT Latency</div>
+              <div className="text-4xl font-bold text-foreground mb-1">&lt;1s</div>
+              <div className="text-sm text-slate-500 dark:text-gray-400 uppercase tracking-wider">IoT Latency</div>
             </div>
           </div>
         </div>
@@ -194,28 +196,28 @@ export default function Landing() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="glass-card p-8 hover:bg-white/10 transition-colors">
+            <div className="glass-card p-8 hover:bg-slate-200 dark:hover:bg-white/10 transition-colors">
               <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center mb-6">
                 <Sparkles className="w-6 h-6 text-blue-400" />
               </div>
               <h3 className="text-xl font-semibold mb-3">AI Chatbot Booking</h3>
-              <p className="text-gray-400">Just type what you need. Our NLP engine finds the perfect room, capacity, and hardware instantly.</p>
+              <p className="text-slate-500 dark:text-gray-400">Just type what you need. Our NLP engine finds the perfect room, capacity, and hardware instantly.</p>
             </div>
 
-            <div className="glass-card p-8 hover:bg-white/10 transition-colors">
+            <div className="glass-card p-8 hover:bg-slate-200 dark:hover:bg-white/10 transition-colors">
               <div className="w-12 h-12 bg-emerald-500/20 rounded-lg flex items-center justify-center mb-6">
                 <ShieldCheck className="w-6 h-6 text-emerald-400" />
               </div>
               <h3 className="text-xl font-semibold mb-3">Anti-Ghosting System</h3>
-              <p className="text-gray-400">Hardware vision verifies physical presence. Abandoned rooms are automatically released back to the pool.</p>
+              <p className="text-slate-500 dark:text-gray-400">Hardware vision verifies physical presence. Abandoned rooms are automatically released back to the pool.</p>
             </div>
 
-            <div className="glass-card p-8 hover:bg-white/10 transition-colors">
+            <div className="glass-card p-8 hover:bg-slate-200 dark:hover:bg-white/10 transition-colors">
               <div className="w-12 h-12 bg-amber-500/20 rounded-lg flex items-center justify-center mb-6">
                 <Zap className="w-6 h-6 text-amber-400" />
               </div>
               <h3 className="text-xl font-semibold mb-3">Real-Time Insights</h3>
-              <p className="text-gray-400">Admins get live heatmaps, instant notifications, and automated ROI reports for every session.</p>
+              <p className="text-slate-500 dark:text-gray-400">Admins get live heatmaps, instant notifications, and automated ROI reports for every session.</p>
             </div>
           </div>
         </div>

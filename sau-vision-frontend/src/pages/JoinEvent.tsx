@@ -74,20 +74,20 @@ export default function JoinEvent() {
   // ── Loading states ───────────────────────────────────────────────────────────
   if (status === 'loading' || authLoading) {
     return (
-      <div className="min-h-screen bg-[#060d18] flex flex-col items-center justify-center p-6 text-center">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center">
         <Loader2 className="w-12 h-12 text-electric-500 animate-spin mb-4" />
-        <h2 className="text-xl font-bold text-white mb-2">Connecting to Event...</h2>
-        <p className="text-gray-400 text-sm">Please wait while we verify the QR code.</p>
+        <h2 className="text-xl font-bold text-foreground mb-2">Connecting to Event...</h2>
+        <p className="text-slate-500 dark:text-gray-400 text-sm">Please wait while we verify the QR code.</p>
       </div>
     );
   }
 
   if (status === 'checking-in') {
     return (
-      <div className="min-h-screen bg-[#060d18] flex flex-col items-center justify-center p-6 text-center">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center">
         <Loader2 className="w-12 h-12 text-electric-500 animate-spin mb-4" />
-        <h2 className="text-xl font-bold text-white mb-2">Recording your attendance...</h2>
-        <p className="text-gray-400 text-sm">Welcome, {user?.name}!</p>
+        <h2 className="text-xl font-bold text-foreground mb-2">Recording your attendance...</h2>
+        <p className="text-slate-500 dark:text-gray-400 text-sm">Welcome, {user?.name}!</p>
       </div>
     );
   }
@@ -95,12 +95,12 @@ export default function JoinEvent() {
   // ── Error ────────────────────────────────────────────────────────────────────
   if (status === 'error') {
     return (
-      <div className="min-h-screen bg-[#060d18] flex flex-col items-center justify-center p-6 text-center animate-fade-in">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center animate-fade-in">
         <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mb-6 border border-red-500/20">
           <ShieldAlert className="w-10 h-10 text-red-500" />
         </div>
-        <h2 className="text-2xl font-bold text-white mb-3">Check-In Failed</h2>
-        <p className="text-gray-400 text-base max-w-sm mb-8">{errorMessage}</p>
+        <h2 className="text-2xl font-bold text-foreground mb-3">Check-In Failed</h2>
+        <p className="text-slate-500 dark:text-gray-400 text-base max-w-sm mb-8">{errorMessage}</p>
         <button onClick={() => navigate('/')} className="btn-primary w-full max-w-xs py-3.5">
           Return to Home
         </button>
@@ -111,22 +111,22 @@ export default function JoinEvent() {
   // ── Already attended ─────────────────────────────────────────────────────────
   if (status === 'already-attended') {
     return (
-      <div className="min-h-screen bg-[#060d18] flex flex-col items-center justify-center p-6 text-center animate-fade-in">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center animate-fade-in">
         <div className="relative mb-8">
           <div className="absolute inset-0 bg-blue-500 blur-[40px] opacity-20 rounded-full" />
           <div className="w-24 h-24 bg-blue-500/10 rounded-full flex items-center justify-center relative border border-blue-500/30">
             <UserCheck className="w-12 h-12 text-blue-400" />
           </div>
         </div>
-        <h2 className="text-3xl font-extrabold text-white mb-2 tracking-tight">Already Checked In!</h2>
+        <h2 className="text-3xl font-extrabold text-foreground mb-2 tracking-tight">Already Checked In!</h2>
         <p className="text-blue-400 font-medium mb-6">Your attendance was already recorded.</p>
-        <div className="bg-[#0d1829] border border-white/10 rounded-2xl p-5 w-full max-w-sm text-left mb-8">
-          <p className="text-sm font-medium text-white">{checkInResult?.eventTitle}</p>
-          <p className="text-xs text-gray-400 mt-1 flex items-center gap-1.5">
+        <div className="bg-card border border-border rounded-2xl p-5 w-full max-w-sm text-left mb-8">
+          <p className="text-sm font-medium text-foreground">{checkInResult?.eventTitle}</p>
+          <p className="text-xs text-slate-500 dark:text-gray-400 mt-1 flex items-center gap-1.5">
             <MapPin className="w-3.5 h-3.5 text-electric-400" />{checkInResult?.labName}
           </p>
         </div>
-        <button onClick={() => navigate('/dashboard')} className="text-gray-400 hover:text-white text-sm font-medium transition-colors">
+        <button onClick={() => navigate('/dashboard')} className="text-slate-500 dark:text-gray-400 hover:text-foreground text-sm font-medium transition-colors">
           Go to my Dashboard
         </button>
       </div>
@@ -136,21 +136,21 @@ export default function JoinEvent() {
   // ── Success ──────────────────────────────────────────────────────────────────
   if (status === 'success') {
     return (
-      <div className="min-h-screen bg-[#060d18] flex flex-col items-center justify-center p-6 text-center animate-fade-in">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center animate-fade-in">
         <div className="relative mb-8">
           <div className="absolute inset-0 bg-emerald-500 blur-[40px] opacity-20 rounded-full" />
           <div className="w-24 h-24 bg-emerald-500/10 rounded-full flex items-center justify-center relative border border-emerald-500/30">
             <CheckCircle2 className="w-12 h-12 text-emerald-400" />
           </div>
         </div>
-        <h2 className="text-3xl font-extrabold text-white mb-2 tracking-tight">Attendance Recorded!</h2>
+        <h2 className="text-3xl font-extrabold text-foreground mb-2 tracking-tight">Attendance Recorded!</h2>
         <p className="text-emerald-400 font-medium mb-2">Welcome, {user?.name}! 🎉</p>
-        <p className="text-gray-500 text-sm mb-8">You have been successfully checked into this event.</p>
+        <p className="text-slate-400 dark:text-gray-500 text-sm mb-8">You have been successfully checked into this event.</p>
 
-        <div className="bg-[#0d1829] border border-white/10 rounded-2xl p-6 w-full max-w-sm text-left mb-8 shadow-2xl">
-          <h3 className="text-lg font-bold text-white mb-4 line-clamp-2">{checkInResult?.eventTitle || eventInfo?.title}</h3>
+        <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-sm text-left mb-8 shadow-2xl">
+          <h3 className="text-lg font-bold text-foreground mb-4 line-clamp-2">{checkInResult?.eventTitle || eventInfo?.title}</h3>
           <div className="space-y-3">
-            <div className="flex items-center gap-3 text-sm text-gray-300">
+            <div className="flex items-center gap-3 text-sm text-slate-600 dark:text-gray-300">
               <MapPin className="w-4 h-4 text-electric-400 shrink-0" />
               <span>{checkInResult?.labName || eventInfo?.labName}</span>
             </div>
@@ -163,9 +163,17 @@ export default function JoinEvent() {
           </div>
         </div>
 
-        <button onClick={() => navigate('/dashboard')} className="text-gray-400 hover:text-white text-sm font-medium transition-colors">
-          Go to my Dashboard
-        </button>
+        <div className="w-full max-w-sm space-y-3">
+          <button
+            onClick={() => navigate(`/booking/${bookingId}/feedback`)}
+            className="w-full py-4 bg-white text-navy-900 rounded-2xl font-bold text-sm hover:bg-electric-400 transition-all hover:scale-[1.01] shadow-[0_0_20px_rgba(59,130,246,0.2)] flex items-center justify-center gap-2"
+          >
+            ⭐ Rate This Event
+          </button>
+          <button onClick={() => navigate('/dashboard')} className="w-full text-slate-500 dark:text-gray-400 hover:text-foreground text-sm font-medium transition-colors py-2">
+            Skip — Go to Dashboard
+          </button>
+        </div>
       </div>
     );
   }
@@ -177,11 +185,11 @@ export default function JoinEvent() {
     const end = new Date(eventInfo.scheduledEnd);
 
     return (
-      <div className="min-h-screen bg-[#060d18] flex flex-col items-center justify-center p-6 animate-fade-in relative overflow-hidden">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 animate-fade-in relative overflow-hidden">
         {/* Background glow */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-electric-600/10 rounded-full blur-[100px] pointer-events-none" />
 
-        <div className="w-full max-w-md bg-[#0d1829]/80 backdrop-blur-xl border border-white/10 rounded-3xl p-8 relative z-10 shadow-2xl">
+        <div className="w-full max-w-md bg-card/80 backdrop-blur-xl border border-border rounded-3xl p-8 relative z-10 shadow-2xl">
           {/* Icon */}
           <div className="w-16 h-16 bg-electric-500/10 rounded-2xl flex items-center justify-center mb-6 border border-electric-500/20 shadow-[0_0_15px_rgba(59,130,246,0.2)]">
             <UserCheck className="w-8 h-8 text-electric-400" />
@@ -195,36 +203,36 @@ export default function JoinEvent() {
           )}
 
           <p className="text-xs text-electric-400 font-semibold uppercase tracking-widest mb-2">You've been invited to</p>
-          <h1 className="text-3xl font-extrabold text-white mb-1 leading-tight">{eventInfo.title}</h1>
-          <p className="text-gray-400 text-sm mb-6">
-            Hosted by <span className="text-white font-medium">{eventInfo.organizerName}</span>
+          <h1 className="text-3xl font-extrabold text-foreground mb-1 leading-tight">{eventInfo.title}</h1>
+          <p className="text-slate-500 dark:text-gray-400 text-sm mb-6">
+            Hosted by <span className="text-foreground font-medium">{eventInfo.organizerName}</span>
           </p>
 
           <div className="space-y-3 mb-8">
-            <div className="flex items-center gap-4 bg-white/5 p-4 rounded-xl border border-white/5">
+            <div className="flex items-center gap-4 bg-slate-100 dark:bg-white/5 p-4 rounded-xl border border-slate-200 dark:border-white/5">
               <MapPin className="w-5 h-5 text-electric-400 shrink-0" />
               <div>
-                <div className="text-xs text-gray-500 mb-0.5">Location</div>
-                <div className="text-sm font-medium text-white">{eventInfo.labName}</div>
+                <div className="text-xs text-slate-400 dark:text-gray-500 mb-0.5">Location</div>
+                <div className="text-sm font-medium text-foreground">{eventInfo.labName}</div>
               </div>
             </div>
-            <div className="flex items-center gap-4 bg-white/5 p-4 rounded-xl border border-white/5">
-              <Calendar className="w-5 h-5 text-gray-400 shrink-0" />
+            <div className="flex items-center gap-4 bg-slate-100 dark:bg-white/5 p-4 rounded-xl border border-slate-200 dark:border-white/5">
+              <Calendar className="w-5 h-5 text-slate-500 dark:text-gray-400 shrink-0" />
               <div>
-                <div className="text-xs text-gray-500 mb-0.5">Scheduled Time</div>
-                <div className="text-sm font-medium text-white">
+                <div className="text-xs text-slate-400 dark:text-gray-500 mb-0.5">Scheduled Time</div>
+                <div className="text-sm font-medium text-foreground">
                   {start.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })} · {start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} – {end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-4 bg-white/5 p-4 rounded-xl border border-white/5">
-              <Users className="w-5 h-5 text-gray-400 shrink-0" />
+            <div className="flex items-center gap-4 bg-slate-100 dark:bg-white/5 p-4 rounded-xl border border-slate-200 dark:border-white/5">
+              <Users className="w-5 h-5 text-slate-500 dark:text-gray-400 shrink-0" />
               <div className="w-full">
-                <div className="flex justify-between items-center text-xs text-gray-500 mb-1.5">
+                <div className="flex justify-between items-center text-xs text-slate-400 dark:text-gray-500 mb-1.5">
                   <span>Capacity</span>
-                  <span className="font-medium text-white">{eventInfo.attendeeCount} / {eventInfo.expectedAttendees}</span>
+                  <span className="font-medium text-foreground">{eventInfo.attendeeCount} / {eventInfo.expectedAttendees}</span>
                 </div>
-                <div className="h-1.5 w-full bg-navy-800 rounded-full overflow-hidden">
+                <div className="h-1.5 w-full bg-white dark:bg-navy-800 rounded-full overflow-hidden">
                   <div
                     className={`h-full transition-all ${isFull ? 'bg-red-500' : 'bg-emerald-500'}`}
                     style={{ width: `${Math.min((eventInfo.attendeeCount / eventInfo.expectedAttendees) * 100, 100)}%` }}
@@ -246,7 +254,7 @@ export default function JoinEvent() {
               >
                 Sign in to record attendance
               </button>
-              <p className="text-xs text-center text-gray-500">
+              <p className="text-xs text-center text-slate-400 dark:text-gray-500">
                 Scanning this QR will mark you as <span className="text-emerald-400 font-medium">attended</span> automatically after login.
               </p>
             </div>
@@ -258,7 +266,7 @@ export default function JoinEvent() {
 
   // Fallback
   return (
-    <div className="min-h-screen bg-[#060d18] flex flex-col items-center justify-center p-6 text-center">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center">
       <Loader2 className="w-12 h-12 text-electric-500 animate-spin mb-4" />
     </div>
   );

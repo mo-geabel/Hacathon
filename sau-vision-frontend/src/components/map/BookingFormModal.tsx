@@ -140,13 +140,13 @@ export default function BookingFormModal({ lab, existingBooking, onClose, onSucc
       style={{ backdropFilter: 'blur(8px)', backgroundColor: 'rgba(0,0,0,0.7)' }}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="w-full max-w-lg bg-[#0d1829] border border-white/10 rounded-2xl shadow-2xl overflow-hidden animate-slide-up">
+      <div className="w-full max-w-lg bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-slide-up">
 
         {/* Header */}
-        <div className="flex items-start justify-between px-6 py-5 border-b border-white/5 bg-white/[0.02]">
+        <div className="flex items-start justify-between px-6 py-5 border-b border-slate-200 dark:border-white/5 bg-white/[0.02]">
           <div>
-            <h2 className="text-white font-bold text-lg">{lab.name}</h2>
-            <p className="text-gray-400 text-xs mt-0.5">{lab.location}</p>
+            <h2 className="text-foreground font-bold text-lg">{lab.name}</h2>
+            <p className="text-slate-500 dark:text-gray-400 text-xs mt-0.5">{lab.location}</p>
             <div className="flex flex-wrap gap-1 mt-2">
               {lab.hardware.slice(0, 4).map((hw) => (
                 <span key={hw} className="text-[10px] px-2 py-0.5 rounded-full bg-electric-500/10 text-electric-400 border border-electric-500/20">
@@ -155,7 +155,7 @@ export default function BookingFormModal({ lab, existingBooking, onClose, onSucc
               ))}
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 text-gray-500 hover:text-white hover:bg-white/5 rounded-lg transition-colors shrink-0">
+          <button onClick={onClose} className="p-1.5 text-slate-400 dark:text-gray-500 hover:text-foreground hover:bg-slate-100 dark:bg-white/5 rounded-lg transition-colors shrink-0">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -166,10 +166,10 @@ export default function BookingFormModal({ lab, existingBooking, onClose, onSucc
             <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mb-4">
               <CheckCircle2 className="w-8 h-8 text-emerald-400" />
             </div>
-            <h3 className="text-xl font-bold text-white mb-2">
+            <h3 className="text-xl font-bold text-foreground mb-2">
               {existingBooking ? 'Booking Updated!' : 'Request Submitted!'}
             </h3>
-            <p className="text-gray-400 text-sm max-w-xs">
+            <p className="text-slate-500 dark:text-gray-400 text-sm max-w-xs">
               {existingBooking
                 ? 'Your pending booking has been successfully updated.'
                 : 'Your booking is pending admin approval. You\'ll see it in your Dashboard once reviewed.'}
@@ -188,7 +188,7 @@ export default function BookingFormModal({ lab, existingBooking, onClose, onSucc
 
             {/* Date */}
             <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1.5 flex items-center gap-1.5">
+              <label className="block text-xs font-medium text-slate-500 dark:text-gray-400 mb-1.5 flex items-center gap-1.5">
                 <Calendar className="w-3 h-3" /> Date
               </label>
               <input
@@ -196,20 +196,20 @@ export default function BookingFormModal({ lab, existingBooking, onClose, onSucc
                 value={date}
                 min={today}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-electric-500 [color-scheme:dark]"
+                className="w-full bg-slate-100 dark:bg-white/5 border border-border rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-electric-500 [color-scheme:dark]"
               />
             </div>
 
             {/* Time Row */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1.5 flex items-center gap-1.5">
+                <label className="block text-xs font-medium text-slate-500 dark:text-gray-400 mb-1.5 flex items-center gap-1.5">
                   <Clock className="w-3 h-3" /> Start Time
                 </label>
                 <select
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-electric-500"
+                  className="w-full bg-slate-100 dark:bg-white/5 border border-border rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-electric-500"
                 >
                   {TIME_OPTIONS.map((t) => {
                     const taken = isSlotTaken(t);
@@ -222,13 +222,13 @@ export default function BookingFormModal({ lab, existingBooking, onClose, onSucc
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1.5 flex items-center gap-1.5">
+                <label className="block text-xs font-medium text-slate-500 dark:text-gray-400 mb-1.5 flex items-center gap-1.5">
                   <Clock className="w-3 h-3" /> End Time
                 </label>
                 <select
                   value={endTime}
                   onChange={(e) => setEndTime(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-electric-500"
+                  className="w-full bg-slate-100 dark:bg-white/5 border border-border rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-electric-500"
                 >
                   {TIME_OPTIONS.map((t) => (
                     <option key={t} value={t}>{t}</option>
@@ -239,7 +239,7 @@ export default function BookingFormModal({ lab, existingBooking, onClose, onSucc
 
             {/* Booked Slots Indicator */}
             {slotsLoading ? (
-              <div className="text-xs text-gray-500 flex items-center gap-1.5">
+              <div className="text-xs text-slate-400 dark:text-gray-500 flex items-center gap-1.5">
                 <Loader2 className="w-3 h-3 animate-spin" /> Checking availability...
               </div>
             ) : bookedSlots.length > 0 ? (
@@ -261,7 +261,7 @@ export default function BookingFormModal({ lab, existingBooking, onClose, onSucc
 
             {/* Attendees */}
             <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1.5 flex items-center gap-1.5">
+              <label className="block text-xs font-medium text-slate-500 dark:text-gray-400 mb-1.5 flex items-center gap-1.5">
                 <Users className="w-3 h-3" /> Expected Attendees
                 <span className="text-gray-600">/ max {lab.capacity}</span>
               </label>
@@ -271,10 +271,10 @@ export default function BookingFormModal({ lab, existingBooking, onClose, onSucc
                 max={lab.capacity}
                 value={attendees}
                 onChange={(e) => setAttendees(Math.min(Number(e.target.value), lab.capacity))}
-                className={`w-full bg-white/5 border rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-electric-500 ${isAttendeesOverCapacity ? 'border-red-500/50' : 'border-white/10'}`}
+                className={`w-full bg-slate-100 dark:bg-white/5 border rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-electric-500 ${isAttendeesOverCapacity ? 'border-red-500/50' : 'border-border'}`}
               />
               {/* Occupancy bar */}
-              <div className="mt-2 h-1.5 w-full bg-navy-800 rounded-full overflow-hidden">
+              <div className="mt-2 h-1.5 w-full bg-white dark:bg-navy-800 rounded-full overflow-hidden">
                 <div
                   className={`h-full transition-all ${(attendees / lab.capacity) > 0.8 ? 'bg-amber-500' : 'bg-electric-500'}`}
                   style={{ width: `${Math.min((attendees / lab.capacity) * 100, 100)}%` }}
@@ -284,7 +284,7 @@ export default function BookingFormModal({ lab, existingBooking, onClose, onSucc
 
             {/* Session Title */}
             <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1.5 flex items-center gap-1.5">
+              <label className="block text-xs font-medium text-slate-500 dark:text-gray-400 mb-1.5 flex items-center gap-1.5">
                 <FileText className="w-3 h-3" /> Session Title *
               </label>
               <input
@@ -292,38 +292,38 @@ export default function BookingFormModal({ lab, existingBooking, onClose, onSucc
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g. MATLAB Workshop, Study Group"
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-electric-500"
+                className="w-full bg-slate-100 dark:bg-white/5 border border-border rounded-lg px-3 py-2.5 text-sm text-foreground placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-electric-500"
               />
             </div>
 
             {/* Description */}
             <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1.5">Description (optional)</label>
+              <label className="block text-xs font-medium text-slate-500 dark:text-gray-400 mb-1.5">Description (optional)</label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Any extra details for the admin..."
                 rows={2}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-electric-500 resize-none"
+                className="w-full bg-slate-100 dark:bg-white/5 border border-border rounded-lg px-3 py-2.5 text-sm text-foreground placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-electric-500 resize-none"
               />
             </div>
 
             {/* Certificate Toggle */}
             <div 
-              className={`p-3 rounded-lg border transition-colors cursor-pointer flex items-start gap-3 ${requiresCertificate ? 'bg-amber-500/10 border-amber-500/30' : 'bg-white/5 border-white/10 hover:border-white/20'}`}
+              className={`p-3 rounded-lg border transition-colors cursor-pointer flex items-start gap-3 ${requiresCertificate ? 'bg-amber-500/10 border-amber-500/30' : 'bg-slate-100 dark:bg-white/5 border-border hover:border-white/20'}`}
               onClick={() => setRequiresCertificate(!requiresCertificate)}
             >
-              <div className={`p-2 rounded-full ${requiresCertificate ? 'bg-amber-500/20 text-amber-400' : 'bg-white/10 text-gray-400'}`}>
+              <div className={`p-2 rounded-full ${requiresCertificate ? 'bg-amber-500/20 text-amber-400' : 'bg-white/10 text-slate-500 dark:text-gray-400'}`}>
                 <Award className="w-4 h-4" />
               </div>
               <div>
-                <h4 className={`text-sm font-medium ${requiresCertificate ? 'text-amber-400' : 'text-gray-300'}`}>Certified Event</h4>
-                <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
+                <h4 className={`text-sm font-medium ${requiresCertificate ? 'text-amber-400' : 'text-slate-600 dark:text-gray-300'}`}>Certified Event</h4>
+                <p className="text-xs text-slate-400 dark:text-gray-500 mt-0.5 leading-relaxed">
                   Attendees will scan a QR code to join. After the event, puq.ai will automatically generate PDF certificates for all participants.
                 </p>
               </div>
               <div className="ml-auto mt-1 flex-shrink-0">
-                <div className={`w-8 h-4 rounded-full transition-colors relative ${requiresCertificate ? 'bg-amber-500' : 'bg-navy-800'}`}>
+                <div className={`w-8 h-4 rounded-full transition-colors relative ${requiresCertificate ? 'bg-amber-500' : 'bg-white dark:bg-navy-800'}`}>
                   <div className={`w-3 h-3 rounded-full bg-white absolute top-0.5 transition-all ${requiresCertificate ? 'left-4.5 right-auto translate-x-[14px]' : 'left-0.5'}`} />
                 </div>
               </div>

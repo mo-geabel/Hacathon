@@ -43,6 +43,73 @@ router.get("/my", requireAuth, requireStudent, asyncHandler(async (req: Request,
   res.json(formatted);
 }));
 
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/registrations/booking/:bookingId
+// Organizer fetches the participant list for their event
+// ─────────────────────────────────────────────────────────────────────────────
+router.get("/booking/:bookingId", requireAuth, asyncHandler(async (req: Request, res: Response) => {
+  const { bookingId } = req.params;
+  const userId = req.user!.id;
+
+  // Fetch the booking to verify ownership
+  const booking = await db.query.bookings.findFirst({
+    where: eq(bookings.id, bookingId),
+    with: {
+      lab: { with: { faculty: true } }
+    }
+  });
+
+  if (!booking) {
+    res.status(404).json({ error: "Event not found." });
+    return;
+  }
+
+  // Only the organizer or an admin can see the attendee list
+  if (req.user!.role !== "admin" && booking.studentId !== userId) {
+    res.status(403).json({ error: "Access denied. You are not the organizer of this event." });
+    return;
+  }
+
+  const regs = await db.query.registrations.findMany({
+    where: eq(registrations.bookingId, bookingId),
+    with: {
+      student: {
+        columns: {
+          id: true,
+          fullName: true,
+          universityId: true,
+          email: true,
+          department: true,
+          gpa: true,
+          eventRating: true,
+        }
+      }
+    },
+    orderBy: (r, { asc }) => [asc(r.createdAt)]
+  });
+
+  const summary = {
+    bookingId: booking.id,
+    title: booking.title,
+    scheduledStart: booking.scheduledStart,
+    scheduledEnd: booking.scheduledEnd,
+    lab: booking.lab,
+    totalRegistered: regs.length,
+    totalAttended: regs.filter((r: any) => r.status === "attended").length,
+    registrations: regs.map((r: any) => ({
+      id: r.id,
+      status: r.status,
+      checkInTime: r.checkInTime,
+      registeredAt: r.createdAt,
+      student: r.student,
+    }))
+  };
+
+  res.json(summary);
+}));
+
+
+
 // POST /api/registrations/:bookingId
 // Student registers for an event
 router.post("/:bookingId", requireAuth, requireStudent, asyncHandler(async (req: Request, res: Response) => {

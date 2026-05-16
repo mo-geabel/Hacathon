@@ -43,19 +43,19 @@ export default function EventFormModal({ mapX, mapY, onSubmit, onCancel }: Event
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ backdropFilter: 'blur(8px)', backgroundColor: 'rgba(0,0,0,0.6)' }}>
-      <div className="w-full max-w-md bg-[#0f1a2e] border border-white/10 rounded-2xl shadow-2xl overflow-hidden animate-slide-up">
+      <div className="w-full max-w-md bg-[#0f1a2e] border border-border rounded-2xl shadow-2xl overflow-hidden animate-slide-up">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-white/[0.02]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-white/5 bg-white/[0.02]">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-electric-500/20 flex items-center justify-center">
               <MapPin className="w-4 h-4 text-electric-400" />
             </div>
             <div>
-              <h2 className="text-white font-semibold text-sm">Add Campus Event</h2>
-              <p className="text-gray-500 text-xs">Pinned at x:{Math.round(mapX)}, y:{Math.round(mapY)}</p>
+              <h2 className="text-foreground font-semibold text-sm">Add Campus Event</h2>
+              <p className="text-slate-400 dark:text-gray-500 text-xs">Pinned at x:{Math.round(mapX)}, y:{Math.round(mapY)}</p>
             </div>
           </div>
-          <button onClick={onCancel} className="p-1.5 text-gray-500 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+          <button onClick={onCancel} className="p-1.5 text-slate-400 dark:text-gray-500 hover:text-foreground hover:bg-slate-100 dark:bg-white/5 rounded-lg transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -70,7 +70,7 @@ export default function EventFormModal({ mapX, mapY, onSubmit, onCancel }: Event
 
           {/* Title */}
           <div>
-            <label className="block text-xs font-medium text-gray-400 mb-1.5 flex items-center gap-1.5">
+            <label className="block text-xs font-medium text-slate-500 dark:text-gray-400 mb-1.5 flex items-center gap-1.5">
               <FileText className="w-3 h-3" /> Event Title *
             </label>
             <input
@@ -78,38 +78,38 @@ export default function EventFormModal({ mapX, mapY, onSubmit, onCancel }: Event
               value={title}
               onChange={e => setTitle(e.target.value)}
               placeholder="e.g. Basketball Practice"
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-electric-500 focus:border-transparent transition-all"
+              className="w-full bg-slate-100 dark:bg-white/5 border border-border rounded-lg px-3 py-2.5 text-sm text-foreground placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-electric-500 focus:border-transparent transition-all"
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-xs font-medium text-gray-400 mb-1.5">Description</label>
+            <label className="block text-xs font-medium text-slate-500 dark:text-gray-400 mb-1.5">Description</label>
             <textarea
               value={description}
               onChange={e => setDescription(e.target.value)}
               placeholder="What's happening? (optional)"
               rows={2}
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-electric-500 focus:border-transparent transition-all resize-none"
+              className="w-full bg-slate-100 dark:bg-white/5 border border-border rounded-lg px-3 py-2.5 text-sm text-foreground placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-electric-500 focus:border-transparent transition-all resize-none"
             />
           </div>
 
           {/* Date */}
           <div>
-            <label className="block text-xs font-medium text-gray-400 mb-1.5 flex items-center gap-1.5">
+            <label className="block text-xs font-medium text-slate-500 dark:text-gray-400 mb-1.5 flex items-center gap-1.5">
               <Calendar className="w-3 h-3" /> Date *
             </label>
             <input
               type="date"
               value={date}
               onChange={e => setDate(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-electric-500 focus:border-transparent transition-all [color-scheme:dark]"
+              className="w-full bg-slate-100 dark:bg-white/5 border border-border rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-electric-500 focus:border-transparent transition-all [color-scheme:dark]"
             />
           </div>
 
           {/* Category */}
           <div>
-            <label className="block text-xs font-medium text-gray-400 mb-1.5 flex items-center gap-1.5">
+            <label className="block text-xs font-medium text-slate-500 dark:text-gray-400 mb-1.5 flex items-center gap-1.5">
               <Tag className="w-3 h-3" /> Category
             </label>
             <div className="grid grid-cols-2 gap-2">
@@ -121,7 +121,7 @@ export default function EventFormModal({ mapX, mapY, onSubmit, onCancel }: Event
                   className={`px-3 py-2 rounded-lg text-xs font-medium border transition-all ${
                     category === cat.value
                       ? cat.color + ' ring-1 ring-white/20'
-                      : 'bg-white/5 text-gray-400 border-white/10 hover:bg-white/10'
+                      : 'bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-gray-400 border-border hover:bg-slate-200 dark:hover:bg-white/10'
                   }`}
                 >
                   {cat.label}
