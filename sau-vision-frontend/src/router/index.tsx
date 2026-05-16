@@ -13,6 +13,8 @@ import CheckIn from '../pages/CheckIn';
 import Report from '../pages/Report';
 import EventsDashboard from '../pages/EventsDashboard';
 import JoinEvent from '../pages/JoinEvent';
+import EventAttendees from '../pages/EventAttendees';
+import EventFeedback from '../pages/EventFeedback';
 
 // ── Shared Layout with Navbar ─────────────────────────────────────────────────
 const Layout = () => (
@@ -38,7 +40,7 @@ const ProtectedRoute = ({
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-navy-900 text-white text-sm">
+      <div className="min-h-screen flex items-center justify-center bg-background text-foreground text-sm">
         Loading...
       </div>
     );
@@ -98,6 +100,24 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute allowedRoles={['student']}>
             <CheckIn />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        // Attendees list — only the organizer can view this
+        path: '/booking/:bookingId/attendees',
+        element: (
+          <ProtectedRoute allowedRoles={['student']}>
+            <EventAttendees />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        // Survey / feedback page for attended guests
+        path: '/booking/:bookingId/feedback',
+        element: (
+          <ProtectedRoute allowedRoles={['student']}>
+            <EventFeedback />
           </ProtectedRoute>
         ),
       },

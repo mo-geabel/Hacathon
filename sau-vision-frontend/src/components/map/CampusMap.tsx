@@ -20,7 +20,7 @@ export default function CampusMap({ rooms }: CampusMapProps) {
   };
 
   return (
-    <div className="w-full h-full min-h-[500px] rounded-xl overflow-hidden border border-white/10 shadow-2xl z-0 relative">
+    <div className="w-full h-full min-h-[500px] rounded-xl overflow-hidden border border-border shadow-2xl z-0 relative">
       <MapContainer 
         center={CAMPUS_CENTER} 
         zoom={16} 
@@ -55,14 +55,14 @@ export default function CampusMap({ rooms }: CampusMapProps) {
                   <div className="flex justify-between items-start mb-2">
                     <h3 className="font-bold text-gray-900 text-lg leading-tight">{room.name}</h3>
                     <div 
-                      className="px-2 py-0.5 rounded-full text-xs font-bold text-white"
+                      className="px-2 py-0.5 rounded-full text-xs font-bold text-foreground"
                       style={{ backgroundColor: color }}
                     >
                       {room.status === 'maintenance' ? 'Maintenance' : `${room.occupancyPercent}%`}
                     </div>
                   </div>
                   
-                  <p className="text-xs text-gray-500 mb-3">{room.location}</p>
+                  <p className="text-xs text-slate-400 dark:text-gray-500 mb-3">{room.location}</p>
 
                   <div className="space-y-2 mb-4">
                     <div className="flex items-center gap-2 text-sm text-gray-700">
@@ -75,7 +75,7 @@ export default function CampusMap({ rooms }: CampusMapProps) {
                     </div>
                   </div>
 
-                  <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-1.5 px-3 rounded text-sm transition-colors flex items-center justify-center gap-1">
+                  <button className="w-full bg-blue-600 hover:bg-blue-700 text-foreground font-medium py-1.5 px-3 rounded text-sm transition-colors flex items-center justify-center gap-1">
                     Book Now <ArrowRight className="w-3 h-3" />
                   </button>
                 </div>

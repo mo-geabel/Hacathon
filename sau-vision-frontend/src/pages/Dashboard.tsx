@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import type { Booking, Room } from '../types';
+import { ThemeToggle } from '../components/ThemeToggle';
 import api from '../lib/api';
 
 type ActiveView = 'booking' | 'browse' | 'profile' | 'history' | 'my-events';
@@ -158,25 +159,28 @@ export default function Dashboard() {
     if (status === 'pending') return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
     if (status === 'completed') return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
     if (status === 'rejected') return 'bg-red-500/20 text-red-400 border-red-500/30';
-    return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+    return 'bg-gray-500/20 text-slate-500 dark:text-gray-400 border-gray-500/30';
   };
 
   return (
-    <div className="min-h-screen bg-navy-900 flex pt-16">
+    <div className="min-h-screen bg-slate-100 dark:bg-navy-900 flex pt-16">
       {/* ─── SIDEBAR ─── */}
-      <aside className="w-64 shrink-0 h-[calc(100vh-4rem)] sticky top-16 bg-navy-800/80 backdrop-blur-md border-r border-white/5 flex flex-col">
+      <aside className="w-64 shrink-0 h-[calc(100vh-4rem)] sticky top-16 bg-white dark:bg-navy-800/80 backdrop-blur-md border-r border-slate-200 dark:border-white/5 flex flex-col">
         {/* Profile Card */}
-        <div className="p-6 border-b border-white/5">
+        <div className="p-6 border-b border-slate-200 dark:border-white/5">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-electric-500 to-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-lg">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-electric-500 to-blue-600 flex items-center justify-center text-foreground font-bold text-lg shadow-lg">
               {initials}
             </div>
             <div className="overflow-hidden">
-              <p className="font-semibold text-white truncate">{user?.name || 'Student'}</p>
-              <p className="text-xs text-gray-400 truncate">{user?.email}</p>
+              <p className="font-semibold text-foreground truncate">{user?.name || 'Student'}</p>
+              <p className="text-xs text-slate-500 dark:text-gray-400 truncate">{user?.email}</p>
+            </div>
+            <div className="ml-auto">
+              <ThemeToggle />
             </div>
           </div>
-          <div className="flex items-center gap-2 text-xs text-gray-500">
+          <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-gray-500">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             Active Student
           </div>
@@ -191,7 +195,7 @@ export default function Dashboard() {
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                 activeView === id
                   ? 'bg-electric-500/15 text-electric-400 border border-electric-500/20'
-                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  : 'text-slate-500 dark:text-gray-400 hover:text-foreground hover:bg-slate-100 dark:bg-white/5'
               }`}
             >
               <Icon className="w-4 h-4 shrink-0" />
@@ -201,7 +205,7 @@ export default function Dashboard() {
 
           <Link
             to="/events"
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-all duration-200"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-500 dark:text-gray-400 hover:text-foreground hover:bg-slate-100 dark:bg-white/5 transition-all duration-200"
           >
             <CalendarCheck className="w-4 h-4 shrink-0" />
             Events Dashboard
@@ -209,7 +213,7 @@ export default function Dashboard() {
 
           <Link
             to="/map"
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-all duration-200"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-500 dark:text-gray-400 hover:text-foreground hover:bg-slate-100 dark:bg-white/5 transition-all duration-200"
           >
             <Map className="w-4 h-4 shrink-0" />
             Campus Map
@@ -217,7 +221,7 @@ export default function Dashboard() {
         </nav>
 
         {/* Sign Out */}
-        <div className="p-3 border-t border-white/5">
+        <div className="p-3 border-t border-slate-200 dark:border-white/5">
           <button
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all duration-200"
@@ -235,23 +239,23 @@ export default function Dashboard() {
         {activeView === 'booking' && (
           <div className="p-8">
             <div className="mb-6">
-              <h1 className="text-2xl font-bold text-white">
+              <h1 className="text-2xl font-bold text-foreground">
                 Welcome back, <span className="gradient-text">{user?.name?.split(' ')[0]}</span> 👋
               </h1>
-              <p className="text-gray-400 mt-1">Where would you like to study today?</p>
+              <p className="text-slate-500 dark:text-gray-400 mt-1">Where would you like to study today?</p>
             </div>
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
               <div className="xl:col-span-2">
                 <ChatWindow />
               </div>
               <div className="space-y-4">
-                <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                <h2 className="text-sm font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-2">
                   <Clock className="w-4 h-4" /> Recent Bookings
                 </h2>
                 {isLoading ? (
-                  <div className="glass-card p-6 text-center text-gray-400 text-sm">Loading...</div>
+                  <div className="glass-card p-6 text-center text-slate-500 dark:text-gray-400 text-sm">Loading...</div>
                 ) : myBookings.length === 0 ? (
-                  <div className="glass-card p-6 text-center text-gray-400 text-sm">
+                  <div className="glass-card p-6 text-center text-slate-500 dark:text-gray-400 text-sm">
                     No bookings yet. Use the chat!
                   </div>
                 ) : (
@@ -261,15 +265,15 @@ export default function Dashboard() {
                         <div className="absolute top-0 left-0 w-0.5 h-full bg-emerald-500" />
                       )}
                       <div className="flex justify-between items-start mb-1">
-                        <h4 className="font-medium text-white text-sm">{booking.roomName}</h4>
+                        <h4 className="font-medium text-foreground text-sm">{booking.roomName}</h4>
                         <span className={`text-[10px] uppercase px-2 py-0.5 rounded-full border ${statusStyle(booking.status)}`}>
                           {booking.status}
                         </span>
                       </div>
-                      <p className="text-xs text-gray-400 flex items-center gap-1">
+                      <p className="text-xs text-slate-500 dark:text-gray-400 flex items-center gap-1">
                         <MapPin className="w-3 h-3" /> {booking.roomLocation}
                       </p>
-                      <p className="text-xs text-gray-500 mt-1">{booking.date} · {booking.time} ({booking.duration}m)</p>
+                      <p className="text-xs text-slate-400 dark:text-gray-500 mt-1">{booking.date} · {booking.time} ({booking.duration}m)</p>
                     </div>
                   ))
                 )}
@@ -281,10 +285,10 @@ export default function Dashboard() {
         {/* PROFILE & SETTINGS VIEW */}
         {activeView === 'profile' && (
           <div className="p-8 max-w-3xl">
-            <div className="mb-2 text-xs text-gray-500 uppercase tracking-widest">Overview</div>
+            <div className="mb-2 text-xs text-slate-400 dark:text-gray-500 uppercase tracking-widest">Overview</div>
             <div className="flex items-center justify-between mb-6">
-              <h1 className="text-2xl font-bold text-white">Dashboard at a Glance</h1>
-              <span className="text-xs text-gray-500">Last synced: Just now</span>
+              <h1 className="text-2xl font-bold text-foreground">Dashboard at a Glance</h1>
+              <span className="text-xs text-slate-400 dark:text-gray-500">Last synced: Just now</span>
             </div>
 
             {/* Stats Row */}
@@ -293,9 +297,9 @@ export default function Dashboard() {
                 <div className="absolute top-3 right-3">
                   <CalendarCheck className="w-4 h-4 text-gray-600" />
                 </div>
-                <p className="text-xs text-gray-400 uppercase tracking-wider mb-2">Semester</p>
-                <p className="text-4xl font-bold text-white">{totalBookings}</p>
-                <p className="text-xs text-gray-400 mt-1">Total Bookings</p>
+                <p className="text-xs text-slate-500 dark:text-gray-400 uppercase tracking-wider mb-2">Semester</p>
+                <p className="text-4xl font-bold text-foreground">{totalBookings}</p>
+                <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">Total Bookings</p>
               </div>
 
               <div className="glass-card p-5 relative overflow-hidden border-electric-500/20">
@@ -304,23 +308,23 @@ export default function Dashboard() {
                   <span className="text-[10px] text-emerald-400">Optimal</span>
                 </div>
                 <ShieldCheck className="w-5 h-5 text-electric-400 mb-2" />
-                <p className="text-4xl font-bold text-white">{reliabilityScore}%</p>
-                <p className="text-xs text-gray-400 mt-1">Reliability Score</p>
+                <p className="text-4xl font-bold text-foreground">{reliabilityScore}%</p>
+                <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">Reliability Score</p>
               </div>
 
               <div className="glass-card p-5 relative overflow-hidden">
                 <div className="absolute top-3 right-3">
                   <Zap className="w-4 h-4 text-gray-600" />
                 </div>
-                <p className="text-xs text-gray-400 uppercase tracking-wider mb-2">Efficiency</p>
-                <p className="text-4xl font-bold text-white">{hoursSaved}h</p>
-                <p className="text-xs text-gray-400 mt-1">Hours Saved</p>
+                <p className="text-xs text-slate-500 dark:text-gray-400 uppercase tracking-wider mb-2">Efficiency</p>
+                <p className="text-4xl font-bold text-foreground">{hoursSaved}h</p>
+                <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">Hours Saved</p>
               </div>
             </div>
 
             {/* Account Management */}
-            <div className="mb-3 text-xs text-gray-500 uppercase tracking-widest">Preferences</div>
-            <h2 className="text-xl font-bold text-white mb-4">Account Management</h2>
+            <div className="mb-3 text-xs text-slate-400 dark:text-gray-500 uppercase tracking-widest">Preferences</div>
+            <h2 className="text-xl font-bold text-foreground mb-4">Account Management</h2>
 
             <div className="glass-card overflow-hidden divide-y divide-white/5">
               {[
@@ -334,21 +338,21 @@ export default function Dashboard() {
                   onClick={action}
                   className="w-full flex items-center gap-4 px-6 py-4 hover:bg-white/[0.03] transition-colors text-left group"
                 >
-                  <div className={`w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center shrink-0 group-hover:bg-white/10 transition-colors`}>
+                  <div className={`w-9 h-9 rounded-lg bg-slate-100 dark:bg-white/5 flex items-center justify-center shrink-0 group-hover:bg-slate-200 dark:hover:bg-white/10 transition-colors`}>
                     <Icon className={`w-4 h-4 ${color}`} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-white">{label}</p>
-                    <p className="text-xs text-gray-400 truncate">{desc}</p>
+                    <p className="text-sm font-medium text-foreground">{label}</p>
+                    <p className="text-xs text-slate-500 dark:text-gray-400 truncate">{desc}</p>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-gray-400 transition-colors shrink-0" />
+                  <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-slate-500 dark:text-gray-400 transition-colors shrink-0" />
                 </button>
               ))}
             </div>
 
             {/* Download button */}
             <div className="mt-6 flex justify-end">
-              <button className="flex items-center gap-2 text-xs text-gray-400 hover:text-white transition-colors py-2 px-3 rounded-lg hover:bg-white/5">
+              <button className="flex items-center gap-2 text-xs text-slate-500 dark:text-gray-400 hover:text-foreground transition-colors py-2 px-3 rounded-lg hover:bg-slate-100 dark:bg-white/5">
                 <Download className="w-3.5 h-3.5" />
                 Download Account Data
               </button>
@@ -361,23 +365,23 @@ export default function Dashboard() {
           <div className="p-8">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
               <div>
-                <h1 className="text-2xl font-bold text-white mb-1">Browse Rooms</h1>
-                <p className="text-gray-400 text-sm">Find and book laboratories manually</p>
+                <h1 className="text-2xl font-bold text-foreground mb-1">Browse Rooms</h1>
+                <p className="text-slate-500 dark:text-gray-400 text-sm">Find and book laboratories manually</p>
               </div>
               <div className="relative w-full sm:w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-gray-500" />
                 <input
                   type="text"
                   placeholder="Search rooms..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-navy-800 border border-white/10 rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-electric-500 transition-all"
+                  className="w-full bg-white dark:bg-navy-800 border border-border rounded-lg pl-10 pr-4 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-electric-500 transition-all"
                 />
               </div>
             </div>
 
             {isLoadingRooms ? (
-              <div className="text-center py-12 text-gray-400">Loading rooms...</div>
+              <div className="text-center py-12 text-slate-500 dark:text-gray-400">Loading rooms...</div>
             ) : (
               <DensityGrid
                 rooms={rooms.filter(r => 
@@ -396,16 +400,16 @@ export default function Dashboard() {
           <div className="p-8 max-w-3xl">
             <button
               onClick={() => setActiveView('profile')}
-              className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors mb-6"
+              className="flex items-center gap-2 text-sm text-slate-500 dark:text-gray-400 hover:text-foreground transition-colors mb-6"
             >
               <ChevronRight className="w-4 h-4 rotate-180" /> Back to Settings
             </button>
-            <h1 className="text-2xl font-bold text-white mb-6">Booking History</h1>
+            <h1 className="text-2xl font-bold text-foreground mb-6">Booking History</h1>
 
             {isLoading ? (
-              <div className="glass-card p-10 text-center text-gray-400">Loading bookings...</div>
+              <div className="glass-card p-10 text-center text-slate-500 dark:text-gray-400">Loading bookings...</div>
             ) : myBookings.length === 0 ? (
-              <div className="glass-card p-10 text-center text-gray-400">
+              <div className="glass-card p-10 text-center text-slate-500 dark:text-gray-400">
                 No bookings found. Use the AI assistant to book a room!
               </div>
             ) : (
@@ -417,8 +421,8 @@ export default function Dashboard() {
                       {isApproved && <div className="absolute top-0 left-0 w-0.5 h-full bg-emerald-500" />}
                       <div className="flex justify-between items-start mb-3">
                         <div>
-                          <h4 className="font-semibold text-white">{booking.roomName}</h4>
-                          <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
+                          <h4 className="font-semibold text-foreground">{booking.roomName}</h4>
+                          <p className="text-xs text-slate-500 dark:text-gray-400 flex items-center gap-1 mt-0.5">
                             <MapPin className="w-3 h-3" /> {booking.roomLocation}
                           </p>
                         </div>
@@ -439,7 +443,7 @@ export default function Dashboard() {
                           )}
                         </div>
                       </div>
-                      <div className="text-sm text-gray-300 mb-3 bg-navy-900/50 px-3 py-2 rounded-lg">
+                      <div className="text-sm text-slate-600 dark:text-gray-300 mb-3 bg-slate-100 dark:bg-navy-900/50 px-3 py-2 rounded-lg">
                         {booking.date} at {booking.time} — {booking.duration} min session
                       </div>
                       {isApproved && (
@@ -477,12 +481,12 @@ export default function Dashboard() {
                                 value={commentText}
                                 onChange={(e) => setCommentText(e.target.value)}
                                 placeholder="Add a comment or question for the admin..."
-                                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-electric-500 resize-none h-16"
+                                className="w-full bg-slate-100 dark:bg-white/5 border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-electric-500 resize-none h-16"
                               />
                               <div className="flex gap-2 justify-end">
                                 <button
                                   onClick={() => { setCommentingBookingId(null); setCommentText(''); }}
-                                  className="text-xs text-gray-400 hover:text-white"
+                                  className="text-xs text-slate-500 dark:text-gray-400 hover:text-foreground"
                                 >
                                   Cancel
                                 </button>
@@ -497,8 +501,8 @@ export default function Dashboard() {
                           ) : (
                             <div className="flex justify-between items-start mt-1">
                               {booking.studentComment ? (
-                                <div className="bg-white/5 rounded px-3 py-2 flex-1 mr-2 text-sm text-gray-300">
-                                  <span className="text-gray-500 text-xs block mb-0.5">Your Comment:</span>
+                                <div className="bg-slate-100 dark:bg-white/5 rounded px-3 py-2 flex-1 mr-2 text-sm text-slate-600 dark:text-gray-300">
+                                  <span className="text-slate-400 dark:text-gray-500 text-xs block mb-0.5">Your Comment:</span>
                                   {booking.studentComment}
                                 </div>
                               ) : (
@@ -509,7 +513,7 @@ export default function Dashboard() {
                                   setCommentingBookingId(booking.id);
                                   setCommentText(booking.studentComment || '');
                                 }}
-                                className="text-xs text-gray-400 hover:text-electric-400 transition-colors whitespace-nowrap mt-1"
+                                className="text-xs text-slate-500 dark:text-gray-400 hover:text-electric-400 transition-colors whitespace-nowrap mt-1"
                               >
                                 {booking.studentComment ? 'Edit Comment' : 'Add Comment'}
                               </button>
@@ -533,10 +537,10 @@ export default function Dashboard() {
         {/* MY EVENTS VIEW */}
         {activeView === 'my-events' && (
           <div className="p-8 max-w-4xl">
-            <h1 className="text-2xl font-bold text-white mb-6">Events I'm Attending</h1>
+            <h1 className="text-2xl font-bold text-foreground mb-6">Events I'm Attending</h1>
 
             {myRegistrations.length === 0 ? (
-              <div className="glass-card p-10 text-center text-gray-400">
+              <div className="glass-card p-10 text-center text-slate-500 dark:text-gray-400">
                 You haven't joined any events yet. <Link to="/events" className="text-electric-400 hover:underline">Browse Events</Link>.
               </div>
             ) : (
@@ -549,7 +553,7 @@ export default function Dashboard() {
                     <div key={reg.id} className="glass-card p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <h3 className="text-lg font-bold text-white">{event.title}</h3>
+                          <h3 className="text-lg font-bold text-foreground">{event.title}</h3>
                           <span className={`text-[10px] uppercase px-2 py-0.5 rounded-full border ${
                             reg.status === 'attended' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' :
                             reg.status === 'registered' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' :
@@ -558,11 +562,11 @@ export default function Dashboard() {
                             {reg.status}
                           </span>
                         </div>
-                        <p className="text-sm text-gray-400 flex items-center gap-2 mb-3">
+                        <p className="text-sm text-slate-500 dark:text-gray-400 flex items-center gap-2 mb-3">
                           <MapPin className="w-4 h-4 text-electric-400" />
                           {event.lab.name} ({event.lab.faculty.name})
                         </p>
-                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                        <div className="flex items-center gap-4 text-xs text-slate-400 dark:text-gray-500">
                           <div className="flex items-center gap-1.5">
                             <Clock className="w-3.5 h-3.5" />
                             {startDate.toLocaleDateString()} at {startDate.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}
@@ -574,7 +578,7 @@ export default function Dashboard() {
                         </div>
                       </div>
 
-                      <div className="shrink-0 flex flex-col items-center gap-3 border-t md:border-t-0 md:border-l border-white/10 pt-4 md:pt-0 md:pl-6 min-w-[120px]">
+                      <div className="shrink-0 flex flex-col items-center gap-3 border-t md:border-t-0 md:border-l border-border pt-4 md:pt-0 md:pl-6 min-w-[120px]">
                         {/* Guests never show a QR — the host displays the event QR at the door */}
                         {reg.status === 'attended' ? (
                           <div className="text-sm text-center">
@@ -582,7 +586,7 @@ export default function Dashboard() {
                               <CheckCircle2 className="w-4 h-4" /> Attended
                             </div>
                             {reg.checkInTime && (
-                              <div className="text-gray-500 text-xs">
+                              <div className="text-slate-400 dark:text-gray-500 text-xs">
                                 Checked in at {new Date(reg.checkInTime).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}
                               </div>
                             )}
@@ -593,7 +597,7 @@ export default function Dashboard() {
                               <Clock className="w-5 h-5 text-amber-400" />
                             </div>
                             <div className="text-xs text-amber-400 font-semibold">Awaiting event</div>
-                            <div className="text-xs text-gray-500 mt-0.5">Host scans you in</div>
+                            <div className="text-xs text-slate-400 dark:text-gray-500 mt-0.5">Host scans you in</div>
                           </div>
                         ) : (
                           <div className="text-xs text-red-400 font-semibold">No Show</div>

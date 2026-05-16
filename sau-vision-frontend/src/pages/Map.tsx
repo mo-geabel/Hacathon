@@ -67,27 +67,27 @@ export default function MapPage() {
   });
 
   return (
-    <div className="min-h-screen bg-navy-900 pt-24 pb-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-background pt-24 pb-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
 
         {/* Header Controls */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-white mb-2">Campus Map</h1>
-            <p className="text-gray-400">Live occupancy & campus events — click to explore</p>
+            <h1 className="text-3xl font-bold text-foreground mb-2">Campus Map</h1>
+            <p className="text-slate-500 dark:text-gray-400">Live occupancy & campus events — click to explore</p>
           </div>
 
           <div className="w-full lg:w-auto flex flex-col sm:flex-row items-center gap-4">
 
             {/* Search */}
             <div className="relative w-full sm:w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-gray-500" />
               <input
                 type="text"
                 placeholder="Search rooms..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-navy-800 border border-white/10 rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-electric-500 transition-all"
+                className="w-full bg-white dark:bg-navy-800 border border-border rounded-lg pl-10 pr-4 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-electric-500 transition-all"
               />
             </div>
             <button className="btn-ghost flex items-center justify-center gap-2 w-full sm:w-auto">
@@ -105,12 +105,12 @@ export default function MapPage() {
               </div>
               <div>
                 <p className="text-sm text-electric-300 font-medium">Viewing labs for selected faculty</p>
-                <p className="text-xs text-gray-400">{filteredRooms.length} labs found</p>
+                <p className="text-xs text-slate-500 dark:text-gray-400">{filteredRooms.length} labs found</p>
               </div>
             </div>
             <button
               onClick={() => setSelectedFacultyId(null)}
-              className="text-xs px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white rounded-md transition-colors"
+              className="text-xs px-3 py-1.5 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-foreground rounded-md transition-colors"
             >
               Clear Filter
             </button>
@@ -121,7 +121,7 @@ export default function MapPage() {
         {/* Content Area */}
         <div className="space-y-8">
           {(viewMode === 'both' || viewMode === 'map') && (
-            <div className="h-[500px] lg:h-[600px] w-full animate-fade-in relative z-0 rounded-xl overflow-hidden border border-white/10 shadow-2xl">
+            <div className="h-[500px] lg:h-[600px] w-full animate-fade-in relative z-0 rounded-xl overflow-hidden border border-border shadow-2xl">
               {/* enableEventMode is always false for unauthenticated users (enforced above) */}
               <CampusImageMap 
                 enableEventMode={eventMode}
@@ -142,7 +142,7 @@ export default function MapPage() {
           {(viewMode === 'both' || viewMode === 'grid') && (
             <div className="animate-fade-in">
               {viewMode === 'both' && (
-                <h2 className="text-xl font-bold text-white mb-4 border-b border-white/10 pb-2">Room Details</h2>
+                <h2 className="text-xl font-bold text-foreground mb-4 border-b border-border pb-2">Room Details</h2>
               )}
               <DensityGrid
                 rooms={filteredRooms}

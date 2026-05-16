@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Activity, LogOut, Menu, X, Map, LayoutDashboard, ShieldCheck } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { ThemeToggle } from '../ThemeToggle';
 
 export default function Navbar() {
   const { user, logout, isAuthenticated } = useAuth();
@@ -37,16 +38,16 @@ export default function Navbar() {
   const logoHref = !isAuthenticated ? '/' : user?.role === 'admin' ? '/admin' : '/dashboard';
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-40 bg-navy-900/80 backdrop-blur-md border-b border-white/10">
+    <nav className="fixed top-0 left-0 right-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
 
           <div className="flex items-center gap-3">
             <Link to={logoHref} className="flex items-center gap-2">
               <div className="w-8 h-8 bg-electric-500 rounded-lg flex items-center justify-center glow-blue-sm">
-                <Activity className="w-5 h-5 text-white" />
+                <Activity className="w-5 h-5 text-foreground" />
               </div>
-              <span className="text-xl font-bold text-white tracking-tight hidden sm:block">
+              <span className="text-xl font-bold text-foreground tracking-tight hidden sm:block">
                 SAÜ-Vision
               </span>
             </Link>
@@ -64,7 +65,7 @@ export default function Navbar() {
                     to={link.path}
                     className={cn(
                       "flex items-center gap-2 text-sm font-medium transition-colors",
-                      isActive ? "text-white" : "text-gray-400 hover:text-white"
+                      isActive ? "text-foreground" : "text-slate-500 dark:text-gray-400 hover:text-foreground"
                     )}
                   >
                     <Icon className={cn("w-4 h-4", isActive ? "text-electric-400" : "")} />
@@ -75,23 +76,27 @@ export default function Navbar() {
             </div>
 
             {isAuthenticated ? (
-              <div className="flex items-center gap-4 pl-6 border-l border-white/10">
+              <div className="flex items-center gap-4 pl-6 border-l border-border dark:border-border">
+                <ThemeToggle />
                 <div className="text-sm">
-                  <div className="text-white font-medium leading-none">{user?.name}</div>
-                  <div className="text-gray-500 text-xs mt-1 capitalize">{user?.role}</div>
+                  <div className="text-slate-900 dark:text-foreground font-medium leading-none">{user?.name}</div>
+                  <div className="text-slate-500 dark:text-slate-400 dark:text-gray-500 text-xs mt-1 capitalize">{user?.role}</div>
                 </div>
                 <button
                   onClick={logout}
-                  className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+                  className="p-2 text-slate-400 dark:text-slate-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
                   title="Log out"
                 >
                   <LogOut className="w-5 h-5" />
                 </button>
               </div>
             ) : (
-              <Link to="/login" className="btn-primary text-sm px-4 py-2">
-                Sign In
-              </Link>
+              <div className="flex items-center gap-4 pl-6 border-l border-border">
+                <ThemeToggle />
+                <Link to="/login" className="btn-primary text-sm px-4 py-2">
+                  Sign In
+                </Link>
+              </div>
             )}
           </div>
 
@@ -99,7 +104,7 @@ export default function Navbar() {
           <div className="flex items-center md:hidden">
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="p-2 text-gray-400 hover:text-white"
+              className="p-2 text-slate-500 dark:text-gray-400 hover:text-foreground"
             >
               {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
@@ -110,7 +115,7 @@ export default function Navbar() {
 
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
-        <div className="md:hidden bg-navy-800 border-b border-white/10 px-4 pt-2 pb-4 space-y-1">
+        <div className="md:hidden bg-white dark:bg-navy-800 border-b border-border px-4 pt-2 pb-4 space-y-1">
           {navLinks.map((link) => {
             const Icon = link.icon;
             const isActive = location.pathname === link.path;
@@ -121,7 +126,7 @@ export default function Navbar() {
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={cn(
                   "flex items-center gap-3 px-3 py-3 rounded-lg text-base font-medium",
-                  isActive ? "bg-electric-500/20 text-electric-400" : "text-gray-300 hover:bg-white/5"
+                  isActive ? "bg-electric-500/20 text-electric-400" : "text-slate-600 dark:text-gray-300 hover:bg-slate-100 dark:bg-white/5"
                 )}
               >
                 <Icon className="w-5 h-5" />

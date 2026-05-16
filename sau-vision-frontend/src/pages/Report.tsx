@@ -82,9 +82,9 @@ export default function Report() {
   // ── Loading ────────────────────────────────────────────────────────────────
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-navy-900 flex items-center justify-center gap-3 text-white">
+      <div className="min-h-screen bg-background flex items-center justify-center gap-3 text-foreground">
         <Loader2 className="w-5 h-5 animate-spin text-electric-400" />
-        <span className="text-sm text-gray-400">Loading report...</span>
+        <span className="text-sm text-slate-500 dark:text-gray-400">Loading report...</span>
       </div>
     );
   }
@@ -92,9 +92,9 @@ export default function Report() {
   // ── Not found ──────────────────────────────────────────────────────────────
   if (notFound || !booking) {
     return (
-      <div className="min-h-screen bg-navy-900 flex flex-col items-center justify-center text-center px-4">
-        <h2 className="text-xl font-bold text-white mb-2">Report Not Found</h2>
-        <p className="text-gray-400 text-sm mb-6">This booking doesn't exist or you don't have access to it.</p>
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center text-center px-4">
+        <h2 className="text-xl font-bold text-foreground mb-2">Report Not Found</h2>
+        <p className="text-slate-500 dark:text-gray-400 text-sm mb-6">This booking doesn't exist or you don't have access to it.</p>
         <Link to="/admin" className="btn-primary px-6 py-2 text-sm">Back to Admin</Link>
       </div>
     );
@@ -132,12 +132,12 @@ export default function Report() {
     : `Floor ${booking.lab.floor}, Room ${booking.lab.roomNumber}`;
 
   return (
-    <div className="min-h-screen bg-navy-900 pt-24 pb-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-background pt-24 pb-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
 
         {/* Top Actions */}
         <div className="flex justify-between items-center mb-8 no-print">
-          <Link to="/admin" className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
+          <Link to="/admin" className="inline-flex items-center gap-2 text-slate-500 dark:text-gray-400 hover:text-foreground transition-colors">
             <ArrowLeft className="w-4 h-4" /> Back to Admin
           </Link>
           <button onClick={() => window.print()} className="btn-ghost flex items-center gap-2">
@@ -149,23 +149,23 @@ export default function Report() {
         <div className="glass-card print-card overflow-hidden">
 
           {/* Header */}
-          <div className="bg-navy-800 border-b border-white/5 p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div className="bg-white dark:bg-navy-800 border-b border-slate-200 dark:border-white/5 p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-2xl font-bold text-white">{booking.title}</h1>
+                <h1 className="text-2xl font-bold text-foreground">{booking.title}</h1>
                 <span className="px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400 text-xs font-semibold border border-blue-500/30">
                   ROI Report
                 </span>
               </div>
-              <p className="text-gray-400">
+              <p className="text-slate-500 dark:text-gray-400">
                 {roomName} · {labLocation}
               </p>
-              <p className="text-gray-500 text-sm mt-1">{timeRange} · {startDate.toLocaleDateString()}</p>
+              <p className="text-slate-400 dark:text-gray-500 text-sm mt-1">{timeRange} · {startDate.toLocaleDateString()}</p>
             </div>
 
             <div className="text-right shrink-0">
-              <div className="text-sm text-gray-400 mb-1">Session ID</div>
-              <div className="font-mono text-gray-300 text-xs">{booking.id}</div>
+              <div className="text-sm text-slate-500 dark:text-gray-400 mb-1">Session ID</div>
+              <div className="font-mono text-slate-600 dark:text-gray-300 text-xs">{booking.id}</div>
             </div>
           </div>
 
@@ -174,18 +174,18 @@ export default function Report() {
 
             {/* KPI Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-              <div className="bg-navy-900/50 p-6 rounded-xl border border-white/5">
-                <div className="text-sm text-gray-400 mb-2">Expected Attendance</div>
-                <div className="text-3xl font-bold text-white">{booking.expectedAttendees}</div>
+              <div className="bg-background/50 p-6 rounded-xl border border-slate-200 dark:border-white/5">
+                <div className="text-sm text-slate-500 dark:text-gray-400 mb-2">Expected Attendance</div>
+                <div className="text-3xl font-bold text-foreground">{booking.expectedAttendees}</div>
               </div>
 
-              <div className="bg-navy-900/50 p-6 rounded-xl border border-white/5">
-                <div className="text-sm text-gray-400 mb-2">Actual Attendance</div>
-                <div className="text-3xl font-bold text-white">{actualAttendance}</div>
+              <div className="bg-background/50 p-6 rounded-xl border border-slate-200 dark:border-white/5">
+                <div className="text-sm text-slate-500 dark:text-gray-400 mb-2">Actual Attendance</div>
+                <div className="text-3xl font-bold text-foreground">{actualAttendance}</div>
               </div>
 
-              <div className={`bg-navy-900/50 p-6 rounded-xl border ${isOvercrowded ? 'border-amber-500/30' : 'border-white/5'}`}>
-                <div className="text-sm text-gray-400 mb-2 flex items-center justify-between">
+              <div className={`bg-background/50 p-6 rounded-xl border ${isOvercrowded ? 'border-amber-500/30' : 'border-slate-200 dark:border-white/5'}`}>
+                <div className="text-sm text-slate-500 dark:text-gray-400 mb-2 flex items-center justify-between">
                   Capacity Efficiency
                   {isOvercrowded && <AlertTriangle className="w-4 h-4 text-amber-500" />}
                 </div>
@@ -200,7 +200,7 @@ export default function Report() {
 
             {/* Occupancy Timeline Chart */}
             <div className="mb-12">
-              <h3 className="text-lg font-semibold text-white mb-6">Occupancy Timeline</h3>
+              <h3 className="text-lg font-semibold text-foreground mb-6">Occupancy Timeline</h3>
               <div className="h-72 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={displayTimeline} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
@@ -225,8 +225,8 @@ export default function Report() {
             </div>
 
             {/* Bottom Action */}
-            <div className="border-t border-white/5 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4 no-print">
-              <div className="text-sm text-gray-400">
+            <div className="border-t border-slate-200 dark:border-white/5 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4 no-print">
+              <div className="text-sm text-slate-500 dark:text-gray-400">
                 {booking.registrations.length} registered attendees ·{' '}
                 {booking.registrations.filter(r => r.checkInTime).length} checked in
               </div>

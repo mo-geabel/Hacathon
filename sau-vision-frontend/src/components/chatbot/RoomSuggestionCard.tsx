@@ -25,31 +25,31 @@ export default function RoomSuggestionCard({ room, date, time, attendees, onBook
   };
 
   return (
-    <div className="w-full max-w-sm bg-navy-800/80 border border-white/10 rounded-xl overflow-hidden mt-2">
-      <div className="p-4 border-b border-white/5 bg-white/[0.02]">
+    <div className="w-full max-w-sm bg-white dark:bg-navy-800/80 border border-border rounded-xl overflow-hidden mt-2">
+      <div className="p-4 border-b border-slate-200 dark:border-white/5 bg-white/[0.02]">
         <div className="flex justify-between items-start mb-2">
-          <h4 className="font-bold text-white text-lg leading-tight">{room.name}</h4>
+          <h4 className="font-bold text-foreground text-lg leading-tight">{room.name}</h4>
           <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
             Available
           </span>
         </div>
-        <p className="text-xs text-gray-400 flex items-center gap-1">
+        <p className="text-xs text-slate-500 dark:text-gray-400 flex items-center gap-1">
           <MapPin className="w-3 h-3" /> {room.location}
         </p>
       </div>
 
       <div className="p-4 space-y-3">
-        <div className="grid grid-cols-2 gap-2 text-xs text-gray-300">
-          <div className="flex items-center gap-2 bg-navy-900 px-2 py-1.5 rounded-md">
+        <div className="grid grid-cols-2 gap-2 text-xs text-slate-600 dark:text-gray-300">
+          <div className="flex items-center gap-2 bg-background px-2 py-1.5 rounded-md">
             <Calendar className="w-3.5 h-3.5 text-electric-400" /> {date}
           </div>
-          <div className="flex items-center gap-2 bg-navy-900 px-2 py-1.5 rounded-md">
+          <div className="flex items-center gap-2 bg-background px-2 py-1.5 rounded-md">
             <Clock className="w-3.5 h-3.5 text-electric-400" /> {time}
           </div>
-          <div className="flex items-center gap-2 bg-navy-900 px-2 py-1.5 rounded-md">
+          <div className="flex items-center gap-2 bg-background px-2 py-1.5 rounded-md">
             <Users className="w-3.5 h-3.5 text-electric-400" /> {attendees} / {room.capacity}
           </div>
-          <div className="flex items-center gap-2 bg-navy-900 px-2 py-1.5 rounded-md truncate">
+          <div className="flex items-center gap-2 bg-background px-2 py-1.5 rounded-md truncate">
             <Monitor className="w-3.5 h-3.5 text-electric-400" />
             {room.hardware[0] || 'Standard'}
           </div>
@@ -60,8 +60,8 @@ export default function RoomSuggestionCard({ room, date, time, attendees, onBook
           disabled={isBooking || booked}
           className={`w-full mt-4 flex items-center justify-center gap-2 py-2 px-4 rounded-lg font-medium text-sm transition-all disabled:cursor-not-allowed ${
             booked
-              ? 'bg-emerald-600 text-white cursor-default'
-              : 'bg-electric-600 hover:bg-electric-500 text-white disabled:opacity-50'
+              ? 'bg-emerald-600 text-foreground cursor-default'
+              : 'bg-electric-600 hover:bg-electric-500 text-foreground disabled:opacity-50'
           }`}
         >
           {isBooking ? (

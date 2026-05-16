@@ -9,6 +9,7 @@ import labsRoutes from "./routes/api/labs";
 import bookingsRoutes from "./routes/api/bookings";
 import registrationsRoutes from "./routes/api/registrations";
 import studentsRoutes from "./routes/api/students";
+import surveyRoutes from "./routes/api/survey";
 
 const app = express();
 const PORT = process.env.PORT ?? 4000;
@@ -23,6 +24,7 @@ app.use("/api/labs", labsRoutes);
 app.use("/api/bookings", bookingsRoutes);
 app.use("/api/registrations", registrationsRoutes);
 app.use("/api/students", studentsRoutes);
+app.use("/api/survey", surveyRoutes);
 
 // Health check
 app.get("/health", (_req, res) => {

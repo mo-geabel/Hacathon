@@ -55,16 +55,16 @@ export default function MyQrModal({ bookingId, eventTitle, onClose }: Props) {
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-fade-in"
       onClick={handleBackdrop}
     >
-      <div className="relative w-full max-w-sm bg-[#0d1829] border border-white/10 rounded-3xl shadow-2xl overflow-hidden">
+      <div className="relative w-full max-w-sm bg-card border border-border rounded-3xl shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-white/5">
+        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-slate-200 dark:border-white/5">
           <div>
             <p className="text-xs text-electric-400 font-semibold uppercase tracking-widest mb-1">Check-In QR Code</p>
-            <h2 className="text-lg font-bold text-white leading-tight line-clamp-2">{eventTitle}</h2>
+            <h2 className="text-lg font-bold text-foreground leading-tight line-clamp-2">{eventTitle}</h2>
           </div>
           <button
             onClick={onClose}
-            className="w-9 h-9 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 transition-colors text-gray-400 hover:text-white shrink-0 ml-3"
+            className="w-9 h-9 flex items-center justify-center rounded-full bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 transition-colors text-slate-500 dark:text-gray-400 hover:text-foreground shrink-0 ml-3"
           >
             <X className="w-5 h-5" />
           </button>
@@ -75,7 +75,7 @@ export default function MyQrModal({ bookingId, eventTitle, onClose }: Props) {
           {isLoading && (
             <div className="flex flex-col items-center py-10 gap-4">
               <Loader2 className="w-10 h-10 text-electric-400 animate-spin" />
-              <p className="text-gray-400 text-sm">Loading your QR code...</p>
+              <p className="text-slate-500 dark:text-gray-400 text-sm">Loading your QR code...</p>
             </div>
           )}
 
@@ -85,7 +85,7 @@ export default function MyQrModal({ bookingId, eventTitle, onClose }: Props) {
                 <ShieldAlert className="w-8 h-8 text-red-400" />
               </div>
               <p className="text-red-400 font-semibold">QR Unavailable</p>
-              <p className="text-gray-400 text-sm">{error}</p>
+              <p className="text-slate-500 dark:text-gray-400 text-sm">{error}</p>
             </div>
           )}
 
@@ -120,7 +120,7 @@ export default function MyQrModal({ bookingId, eventTitle, onClose }: Props) {
                 />
               </div>
 
-              <p className="text-xs text-gray-500 mt-4 text-center max-w-[220px]">
+              <p className="text-xs text-slate-400 dark:text-gray-500 mt-4 text-center max-w-[220px]">
                 Show this QR code to the organizer at the door to register your attendance.
               </p>
 

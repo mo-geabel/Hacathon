@@ -45,7 +45,7 @@ const getOccupancyColor = (percent: number) => {
 // ── Helper: Custom Faculty Icon ───────────────────────────────────────────────
 const getFacultyIcon = (color: string) => {
   const html = `
-    <div style="background-color: ${color};" class="w-10 h-10 rounded-xl shadow-lg border-2 border-white flex items-center justify-center text-white transform transition-transform hover:scale-110">
+    <div style="background-color: ${color};" class="w-10 h-10 rounded-xl shadow-lg border-2 border-white flex items-center justify-center text-foreground transform transition-transform hover:scale-110">
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect>
         <path d="M9 22v-4h6v4"></path>
@@ -257,12 +257,12 @@ export default function CampusImageMap({
                   </button>
                 </div>
                 {event.description && (
-                  <p className="text-xs text-gray-500 mb-2">{event.description}</p>
+                  <p className="text-xs text-slate-400 dark:text-gray-500 mb-2">{event.description}</p>
                 )}
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-400">📅 {event.date}</span>
+                  <span className="text-xs text-slate-500 dark:text-gray-400">📅 {event.date}</span>
                   <span
-                    className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full text-white"
+                    className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full text-foreground"
                     style={{ backgroundColor: CATEGORY_COLORS[event.category] }}
                   >
                     {event.category}
@@ -297,7 +297,7 @@ export default function CampusImageMap({
 
                   <button
                     onClick={() => onFacultySelect?.(faculty.id)}
-                    className="w-full py-1.5 bg-electric-600 hover:bg-electric-700 text-white text-xs font-medium rounded-md transition-colors"
+                    className="w-full py-1.5 bg-electric-600 hover:bg-electric-700 text-foreground text-xs font-medium rounded-md transition-colors"
                   >
                     View Labs
                   </button>
@@ -327,7 +327,7 @@ export default function CampusImageMap({
               <Popup>
                 <div className="min-w-[200px] p-1">
                   <h3 className="font-bold text-gray-900 text-base mb-1">{room.name}</h3>
-                  <p className="text-xs text-gray-500 mb-3">{room.location}</p>
+                  <p className="text-xs text-slate-400 dark:text-gray-500 mb-3">{room.location}</p>
                   
                   <div className="flex justify-between items-center mb-3 text-sm border-b pb-2 border-gray-100">
                     <span className="text-gray-600 font-medium">Occupancy</span>
@@ -356,7 +356,7 @@ export default function CampusImageMap({
                   {onRoomClick && (
                     <button
                       onClick={() => onRoomClick(room)}
-                      className="w-full py-1.5 bg-electric-600 hover:bg-electric-700 text-white text-xs font-medium rounded-md transition-colors"
+                      className="w-full py-1.5 bg-electric-600 hover:bg-electric-700 text-foreground text-xs font-medium rounded-md transition-colors"
                     >
                       Book Room
                     </button>
@@ -395,8 +395,8 @@ export default function CampusImageMap({
 
       {/* Loading overlay */}
       {isLoading && (
-        <div className="absolute inset-0 z-[500] flex items-center justify-center bg-navy-900/60 backdrop-blur-sm rounded-xl">
-          <div className="text-sm text-gray-400">Loading campus events...</div>
+        <div className="absolute inset-0 z-[500] flex items-center justify-center bg-background/60 backdrop-blur-sm rounded-xl">
+          <div className="text-sm text-slate-500 dark:text-gray-400">Loading campus events...</div>
         </div>
       )}
 

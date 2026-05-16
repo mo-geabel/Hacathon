@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { LogIn, Library, ShieldCheck, Loader2, GraduationCap } from 'lucide-react';
+import { ThemeToggle } from '../components/ThemeToggle';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -38,10 +39,10 @@ export default function Login() {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#0d1829]">
+    <div className="flex min-h-screen bg-card">
       {/* Left Pane - Image & Academic Quote */}
-      <div className="hidden lg:flex lg:w-1/2 relative bg-navy-900 border-r border-white/5">
-        <div className="absolute inset-0 bg-navy-900/60 mix-blend-multiply z-10" />
+      <div className="hidden lg:flex lg:w-1/2 relative bg-background border-r border-slate-200 dark:border-white/5">
+        <div className="absolute inset-0 bg-background/60 mix-blend-multiply z-10" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#0d1829] via-[#0d1829]/60 to-transparent z-10" />
         <img 
           src="/academic-bg.png" 
@@ -49,7 +50,7 @@ export default function Login() {
           className="absolute inset-0 w-full h-full object-cover"
         />
         
-        <div className="relative z-20 flex flex-col justify-end p-16 h-full text-white max-w-2xl">
+        <div className="relative z-20 flex flex-col justify-end p-16 h-full text-foreground max-w-2xl">
           <div className="flex items-center gap-4 mb-8">
             <div className="w-14 h-14 rounded-2xl bg-amber-500/20 flex items-center justify-center border border-amber-500/30 backdrop-blur-sm">
               <Library className="w-7 h-7 text-amber-400" />
@@ -65,7 +66,7 @@ export default function Login() {
             </p>
             <footer className="flex items-center gap-3">
               <div className="h-px w-12 bg-amber-500/50" />
-              <span className="text-sm font-medium text-gray-400 uppercase tracking-widest">
+              <span className="text-sm font-medium text-slate-500 dark:text-gray-400 uppercase tracking-widest">
                 Academic Excellence
               </span>
             </footer>
@@ -73,8 +74,10 @@ export default function Login() {
         </div>
       </div>
 
-      {/* Right Pane - Login Form */}
       <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-20 xl:px-32 relative">
+        <div className="absolute top-6 right-6 z-50">
+          <ThemeToggle />
+        </div>
         {/* Subtle background glow for right pane */}
         <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-electric-500/5 blur-[120px] pointer-events-none" />
 
@@ -84,21 +87,21 @@ export default function Login() {
               <Library className="w-6 h-6 text-amber-400" />
             </div>
             <div>
-              <h2 className="text-xl font-serif font-bold text-white tracking-tight">Sakarya University</h2>
+              <h2 className="text-xl font-serif font-bold text-foreground tracking-tight">Sakarya University</h2>
               <p className="text-amber-400/90 text-xs font-medium uppercase tracking-widest mt-0.5">SAÜ-Vision</p>
             </div>
           </div>
 
           <div>
-            <h2 className="text-3xl font-bold text-white tracking-tight font-serif mb-2">
+            <h2 className="text-3xl font-bold text-foreground tracking-tight font-serif mb-2">
               Welcome back
             </h2>
-            <p className="text-sm text-gray-400 mb-8">
+            <p className="text-sm text-slate-500 dark:text-gray-400 mb-8">
               Please enter your academic credentials to access the portal.
             </p>
           </div>
 
-          <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-6 sm:p-8 backdrop-blur-sm">
+          <div className="bg-white/[0.02] border border-slate-200 dark:border-white/5 rounded-2xl p-6 sm:p-8 backdrop-blur-sm">
             <form className="space-y-6" onSubmit={handleSubmit}>
               {error && (
                 <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm p-3.5 rounded-xl flex items-center gap-2">
@@ -108,7 +111,7 @@ export default function Login() {
               )}
 
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-300">
+                <label htmlFor="email" className="block text-sm font-medium text-slate-600 dark:text-gray-300">
                   University Email
                 </label>
                 <div className="mt-2">
@@ -120,14 +123,14 @@ export default function Login() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="appearance-none block w-full px-4 py-3 border border-white/10 rounded-xl shadow-sm placeholder-gray-500 bg-navy-900/50 text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 sm:text-sm transition-all"
+                    className="appearance-none block w-full px-4 py-3 border border-border rounded-xl shadow-sm placeholder-gray-500 bg-background/50 text-foreground focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 sm:text-sm transition-all"
                     placeholder="name@sakarya.edu.tr"
                   />
                 </div>
               </div>
 
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-300">
+                <label htmlFor="password" className="block text-sm font-medium text-slate-600 dark:text-gray-300">
                   Password
                 </label>
                 <div className="mt-2">
@@ -139,7 +142,7 @@ export default function Login() {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="appearance-none block w-full px-4 py-3 border border-white/10 rounded-xl shadow-sm placeholder-gray-500 bg-navy-900/50 text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 sm:text-sm transition-all"
+                    className="appearance-none block w-full px-4 py-3 border border-border rounded-xl shadow-sm placeholder-gray-500 bg-background/50 text-foreground focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 sm:text-sm transition-all"
                     placeholder="••••••••"
                   />
                 </div>
@@ -151,15 +154,15 @@ export default function Login() {
                     id="remember-me"
                     name="remember-me"
                     type="checkbox"
-                    className="h-4 w-4 bg-navy-900 border-white/10 rounded text-amber-500 focus:ring-amber-500"
+                    className="h-4 w-4 bg-background border-border rounded text-amber-500 focus:ring-amber-500"
                   />
-                  <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-400">
+                  <label htmlFor="remember-me" className="ml-2 block text-sm text-slate-500 dark:text-gray-400">
                     Remember me
                   </label>
                 </div>
 
                 <div className="text-sm">
-                  <a href="#" className="font-medium text-gray-400 hover:text-amber-400 transition-colors">
+                  <a href="#" className="font-medium text-slate-500 dark:text-gray-400 hover:text-amber-400 transition-colors">
                     Forgot password?
                   </a>
                 </div>
@@ -186,7 +189,7 @@ export default function Login() {
           </div>
           
           <div className="mt-8 text-center">
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-slate-400 dark:text-gray-500">
               By logging in, you agree to the University's Acceptable Use Policy.
             </p>
           </div>
