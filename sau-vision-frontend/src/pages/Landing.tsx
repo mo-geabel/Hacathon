@@ -60,20 +60,20 @@ export default function Landing() {
     <div className="min-h-screen bg-background text-foreground overflow-hidden selection:bg-electric-500/30">
 
       {/* Navbar */}
-      <nav className="absolute top-0 left-0 right-0 p-6 flex justify-between items-center z-50">
+      <nav className="absolute top-0 left-0 right-0 p-4 sm:p-6 flex justify-between items-center z-50">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-electric-500 rounded-lg flex items-center justify-center glow-blue">
+          <div className="w-8 h-8 bg-electric-500 rounded-lg flex items-center justify-center glow-blue shrink-0">
             <Activity className="w-5 h-5 text-foreground" />
           </div>
-          <span className="text-xl font-bold tracking-tight drop-shadow-lg">SAÜ-Vision</span>
+          <span className="text-lg sm:text-xl font-bold tracking-tight drop-shadow-lg hidden sm:block">SAÜ-Vision</span>
         </div>
-        <div className="flex gap-4 items-center">
+        <div className="flex gap-2 sm:gap-4 items-center">
           <ThemeToggle />
-          <Link to="/map" className="text-sm font-medium text-foreground/80 hover:text-foreground transition-colors drop-shadow">
+          <Link to="/map" className="hidden sm:block text-sm font-medium text-foreground/80 hover:text-foreground transition-colors drop-shadow">
             Campus Map
           </Link>
-          <Link to="/login" className="btn-primary flex items-center gap-2 text-sm px-5 py-2">
-            Sign In <ArrowRight className="w-4 h-4" />
+          <Link to="/login" className="btn-primary flex items-center gap-2 text-xs sm:text-sm px-4 py-2">
+            Sign In <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 hidden xs:block" />
           </Link>
         </div>
       </nav>

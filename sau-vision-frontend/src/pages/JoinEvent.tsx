@@ -74,7 +74,7 @@ export default function JoinEvent() {
   // ── Loading states ───────────────────────────────────────────────────────────
   if (status === 'loading' || authLoading) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-6 sm:p-6 text-center">
         <Loader2 className="w-12 h-12 text-electric-500 animate-spin mb-4" />
         <h2 className="text-xl font-bold text-foreground mb-2">Connecting to Event...</h2>
         <p className="text-slate-500 dark:text-gray-400 text-sm">Please wait while we verify the QR code.</p>
@@ -84,7 +84,7 @@ export default function JoinEvent() {
 
   if (status === 'checking-in') {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-6 sm:p-6 text-center">
         <Loader2 className="w-12 h-12 text-electric-500 animate-spin mb-4" />
         <h2 className="text-xl font-bold text-foreground mb-2">Recording your attendance...</h2>
         <p className="text-slate-500 dark:text-gray-400 text-sm">Welcome, {user?.name}!</p>
@@ -95,7 +95,7 @@ export default function JoinEvent() {
   // ── Error ────────────────────────────────────────────────────────────────────
   if (status === 'error') {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center animate-fade-in">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-6 sm:p-6 text-center animate-fade-in">
         <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mb-6 border border-red-500/20">
           <ShieldAlert className="w-10 h-10 text-red-500" />
         </div>
@@ -111,7 +111,7 @@ export default function JoinEvent() {
   // ── Already attended ─────────────────────────────────────────────────────────
   if (status === 'already-attended') {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center animate-fade-in">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-6 sm:p-6 text-center animate-fade-in">
         <div className="relative mb-8">
           <div className="absolute inset-0 bg-blue-500 blur-[40px] opacity-20 rounded-full" />
           <div className="w-24 h-24 bg-blue-500/10 rounded-full flex items-center justify-center relative border border-blue-500/30">
@@ -136,7 +136,7 @@ export default function JoinEvent() {
   // ── Success ──────────────────────────────────────────────────────────────────
   if (status === 'success') {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center animate-fade-in">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-6 sm:p-6 text-center animate-fade-in">
         <div className="relative mb-8">
           <div className="absolute inset-0 bg-emerald-500 blur-[40px] opacity-20 rounded-full" />
           <div className="w-24 h-24 bg-emerald-500/10 rounded-full flex items-center justify-center relative border border-emerald-500/30">
@@ -185,7 +185,7 @@ export default function JoinEvent() {
     const end = new Date(eventInfo.scheduledEnd);
 
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 animate-fade-in relative overflow-hidden">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-6 sm:p-6 animate-fade-in relative overflow-hidden">
         {/* Background glow */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-electric-600/10 rounded-full blur-[100px] pointer-events-none" />
 
@@ -266,7 +266,7 @@ export default function JoinEvent() {
 
   // Fallback
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-6 sm:p-6 text-center">
       <Loader2 className="w-12 h-12 text-electric-500 animate-spin mb-4" />
     </div>
   );
