@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { db } from "../../db/client";
-import { bookings, labs } from "../../db/schema";
+import { bookings, labs, studentHistory } from "../../db/schema";
 import { eq, and, gte, lt, or } from "drizzle-orm";
 import { requireAuth, requireAdmin, requireStudent } from "../../middleware/auth";
 import { geminiModel } from "../../services/gemini";
@@ -155,6 +155,14 @@ router.post("/", requireAuth, requireStudent, asyncHandler(async (req: Request, 
     scheduledEnd: end,
     status: "pending",
   }).returning();
+
+  // Log the creation into the student's history
+  await db.insert(studentHistory).values({
+    studentId,
+    bookingId: newBooking.id,
+    eventType: "booking_created",
+    description: `Created a booking for ${expectedAttendees} attendees in lab ${labId}`
+  });
 
   res.status(201).json(newBooking);
 }));
