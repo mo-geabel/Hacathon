@@ -39,15 +39,7 @@ router.get("/", asyncHandler(async (req: Request, res: Response) => {
           or(eq(bookings.status, "approved"), eq(bookings.status, "active")),
           lt(bookings.scheduledStart, dayEnd),
           gte(bookings.scheduledEnd, dayStart)
-        ),
-        columns: {
-          id: true,
-          title: true,
-          description: true,
-          scheduledStart: true,
-          scheduledEnd: true,
-          status: true
-        }
+        )
       }
     },
   });

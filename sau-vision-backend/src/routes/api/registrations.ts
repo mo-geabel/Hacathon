@@ -79,7 +79,7 @@ router.get("/booking/:bookingId", requireAuth, asyncHandler(async (req: Request,
           fullName: true,
           universityId: true,
           email: true,
-          department: true,
+          programme: true,
           gpa: true,
           eventRating: true,
         }
