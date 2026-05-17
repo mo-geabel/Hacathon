@@ -1,0 +1,701 @@
+{
+  "module": "Server",
+  "executor": "App",
+  "ws_channel": "/ws/b64d0507ae81f188aa06ebc45f55639b",
+  "app": {
+    "nodes": [
+      {
+        "type": "capsule",
+        "name": "PersonDetection",
+        "configs": {
+          "executor": {
+            "name": "ConfigExecutor",
+            "value": {
+              "name": "PersonDetection",
+              "value": {
+                "name": "PersonDetection",
+                "inputs": {
+                  "name": "PersonDetection",
+                  "inputImage": {
+                    "name": "inputImage",
+                    "type": "object"
+                  }
+                },
+                "configs": {
+                  "configWeights": {
+                    "name": "Weights",
+                    "value": {
+                      "name": "YoloV5s",
+                      "value": "yolov5s.pt",
+                      "type": "string",
+                      "field": "option"
+                    },
+                    "type": "object",
+                    "field": "dropdownlist",
+                    "restart": true
+                  },
+                  "configDevice": {
+                    "name": "ConfigDevice",
+                    "value": {
+                      "name": "ConfigDeviceGPU",
+                      "value": "GPU",
+                      "type": "string",
+                      "field": "option",
+                      "configHalf": {
+                        "name": "Half",
+                        "value": {
+                          "name": "False",
+                          "value": false,
+                          "type": "bool",
+                          "field": "option"
+                        },
+                        "type": "object",
+                        "field": "dropdownlist",
+                        "restart": true
+                      }
+                    },
+                    "type": "object",
+                    "field": "dependentDropdownlist",
+                    "restart": true
+                  },
+                  "configConfidentThreshold": {
+                    "name": "ConfidentThreshold",
+                    "value": 0.3,
+                    "type": "number",
+                    "field": "textInput"
+                  },
+                  "configIOUThreshold": {
+                    "name": "IOUThreshold",
+                    "value": 0.3,
+                    "type": "number",
+                    "field": "textInput"
+                  }
+                }
+              },
+              "type": "object",
+              "field": "option"
+            },
+            "type": "executor",
+            "field": "dependentDropdownlist"
+          }
+        },
+        "debug": "False",
+        "api": "False",
+        "uID": "aXuATh"
+      },
+      {
+        "type": "capsule",
+        "name": "ObjectTracking",
+        "configs": {
+          "executor": {
+            "name": "ConfigExecutor",
+            "value": {
+              "name": "ObjectTracking",
+              "value": {
+                "name": "ObjectTracking",
+                "inputs": {
+                  "name": "ObjectTracking",
+                  "inputImage": {
+                    "name": "inputImage",
+                    "type": "object"
+                  },
+                  "inputDetections": {
+                    "name": "inputDetections",
+                    "value": [],
+                    "type": "list"
+                  }
+                },
+                "configs": {
+                  "configAdvance": {
+                    "name": "ConfigAdvance",
+                    "value": {
+                      "name": "False",
+                      "value": "False",
+                      "type": "bool",
+                      "field": "option"
+                    },
+                    "type": "object",
+                    "field": "dependentDropdownlist",
+                    "restart": true
+                  }
+                }
+              },
+              "type": "object",
+              "field": "option"
+            },
+            "type": "executor",
+            "field": "dependentDropdownlist"
+          }
+        },
+        "debug": "False",
+        "api": "False",
+        "uID": "ykPbmp"
+      },
+      {
+        "type": "component",
+        "name": "ObjectCounting",
+        "configs": {
+          "executor": {
+            "name": "ConfigExecutor",
+            "value": {
+              "name": "ObjectCounting",
+              "value": {
+                "name": "ObjectCounting",
+                "inputs": {
+                  "name": "ObjectCounting",
+                  "inputDetection": {
+                    "name": "inputDetection",
+                    "value": [],
+                    "type": "list"
+                  }
+                },
+                "configs": {
+                  "configRoi": {
+                    "name": "configRoi",
+                    "value": "{\"polyLines\":[{\"points\":[2,3,3,812,1588,809,1588,3],\"uid\":\"X3hu3y\"}],\"config\":{\"isMultiple\":true,\"region\":\"polyLine\",\"image\":\"https://suite.novavision.ai/storage/default/get-file?id=48374\",\"size\":100,\"canvasSize\":{\"width\":1600,\"height\":817}}}",
+                    "type": "string",
+                    "field": "widget"
+                  },
+                  "configAdvance": {
+                    "name": "configAdvance",
+                    "value": {
+                      "name": "False",
+                      "value": "False",
+                      "type": "bool",
+                      "field": "option"
+                    },
+                    "type": "object",
+                    "field": "dependentDropdownlist"
+                  }
+                }
+              },
+              "type": "object",
+              "field": "option"
+            },
+            "type": "executor",
+            "field": "dependentDropdownlist"
+          }
+        },
+        "debug": "False",
+        "api": "False",
+        "uID": "DgbooY"
+      },
+      {
+        "type": "component",
+        "name": "DrawBoundingBox",
+        "configs": {
+          "executor": {
+            "name": "ConfigExecutor",
+            "value": {
+              "name": "DrawBoundingBox",
+              "value": {
+                "name": "DrawBoundingBox",
+                "inputs": {
+                  "name": "DrawBoundingBox",
+                  "inputImage": {
+                    "name": "inputImage",
+                    "type": "object"
+                  },
+                  "inputDetections": {
+                    "name": "inputDetections",
+                    "type": "list"
+                  }
+                },
+                "configs": {
+                  "configColorAxis": {
+                    "name": "ConfigColorAxis",
+                    "value": {
+                      "name": "Class",
+                      "value": "Class",
+                      "type": "string",
+                      "field": "option"
+                    },
+                    "type": "object",
+                    "field": "dropdownlist"
+                  },
+                  "configColorPalette": {
+                    "name": "ConfigColorPalette",
+                    "value": {
+                      "name": "ColorPalettePastel1",
+                      "value": "Pastel1",
+                      "type": "string",
+                      "field": "option",
+                      "configPaletteSize": {
+                        "name": "ConfigPaletteSize",
+                        "value": 5,
+                        "type": "number",
+                        "field": "textInput"
+                      }
+                    },
+                    "type": "object",
+                    "field": "dependentDropdownlist"
+                  },
+                  "configThickness": {
+                    "name": "ConfigThickness",
+                    "value": 2,
+                    "type": "number",
+                    "field": "textInput"
+                  },
+                  "configRadius": {
+                    "name": "ConfigRadius",
+                    "value": 0,
+                    "type": "number",
+                    "field": "textInput"
+                  }
+                }
+              },
+              "type": "object",
+              "field": "option"
+            },
+            "type": "executor",
+            "field": "dependentDropdownlist",
+            "restart": true
+          }
+        },
+        "debug": "False",
+        "api": "False",
+        "uID": "bDTmwV"
+      },
+      {
+        "type": "component",
+        "name": "DrawLabel",
+        "configs": {
+          "executor": {
+            "name": "ConfigExecutor",
+            "value": {
+              "name": "OnImage",
+              "value": {
+                "name": "OnImage",
+                "inputs": {
+                  "name": "OnImage",
+                  "inputImage": {
+                    "name": "inputImage",
+                    "type": "object"
+                  },
+                  "inputData": {
+                    "name": "inputData",
+                    "type": "object"
+                  }
+                },
+                "configs": {
+                  "textCustom": {
+                    "name": "TextCustom",
+                    "value": "zone",
+                    "type": "string",
+                    "field": "textInput"
+                  },
+                  "labelCustom": {
+                    "name": "LabelCustom",
+                    "value": "zone",
+                    "type": "string",
+                    "field": "textInput"
+                  },
+                  "configAdvanceOnImage": {
+                    "name": "ConfigAdvanceOnImage",
+                    "value": {
+                      "name": "True",
+                      "value": "True",
+                      "type": "bool",
+                      "field": "option",
+                      "configTextPosition": {
+                        "name": "ConfigTextPosition",
+                        "value": {
+                          "name": "Top_right",
+                          "value": "Top_right",
+                          "type": "string",
+                          "field": "option"
+                        },
+                        "type": "object",
+                        "field": "dependentDropdownlist"
+                      },
+                      "configTextFont": {
+                        "name": "ConfigTextFont",
+                        "value": {
+                          "name": "TextFontSimplex",
+                          "value": "FontHersheySimplex",
+                          "type": "string",
+                          "field": "option"
+                        },
+                        "type": "object",
+                        "field": "dropdownlist"
+                      },
+                      "configTextFontScale": {
+                        "name": "ConfigTextFontScale",
+                        "value": 0.5,
+                        "type": "number",
+                        "field": "textInput"
+                      },
+                      "configTextFontThickness": {
+                        "name": "ConfigTextFontThickness",
+                        "value": 1,
+                        "type": "number",
+                        "field": "textInput"
+                      },
+                      "configTextColor": {
+                        "name": "ConfigTextColor",
+                        "value": "#FFFFFF",
+                        "type": "string",
+                        "field": "textInput"
+                      },
+                      "configTextBackgroundColor": {
+                        "name": "ConfigTextBackgroundColor",
+                        "value": "#000000",
+                        "type": "string",
+                        "field": "textInput"
+                      },
+                      "configTextPadding": {
+                        "name": "ConfigTextPadding",
+                        "value": 2,
+                        "type": "number",
+                        "field": "textInput"
+                      }
+                    },
+                    "type": "object",
+                    "field": "dependentDropdownlist"
+                  }
+                }
+              },
+              "type": "object",
+              "field": "option"
+            },
+            "type": "executor",
+            "field": "dependentDropdownlist",
+            "restart": true
+          }
+        },
+        "debug": "False",
+        "api": "False",
+        "uID": "yubrQR"
+      },
+      {
+        "type": "component",
+        "name": "DrawLabel",
+        "configs": {
+          "executor": {
+            "name": "ConfigExecutor",
+            "value": {
+              "name": "OnDetection",
+              "value": {
+                "name": "OnDetection",
+                "inputs": {
+                  "name": "OnDetection",
+                  "inputImage": {
+                    "name": "inputImage",
+                    "type": "object"
+                  },
+                  "inputDetections": {
+                    "name": "inputDetections",
+                    "type": "object"
+                  }
+                },
+                "configs": {
+                  "configTextConfidence": {
+                    "name": "ConfigTextConfidence",
+                    "value": {
+                      "name": "True",
+                      "value": "True",
+                      "type": "bool",
+                      "field": "option"
+                    },
+                    "type": "object",
+                    "field": "dropdownlist"
+                  },
+                  "configTextType": {
+                    "name": "ConfigTextType",
+                    "value": {
+                      "name": "TrackerID",
+                      "value": "TrackerID",
+                      "type": "string",
+                      "field": "option"
+                    },
+                    "type": "object",
+                    "field": "dependentDropdownlist"
+                  },
+                  "configAdvance": {
+                    "name": "ConfigAdvance",
+                    "value": {
+                      "name": "True",
+                      "value": "True",
+                      "type": "bool",
+                      "field": "option",
+                      "configColorPalette": {
+                        "name": "ConfigColorPalette",
+                        "value": {
+                          "name": "ColorPalettePastel1",
+                          "value": "Pastel1",
+                          "type": "string",
+                          "field": "option",
+                          "configPaletteSize": {
+                            "name": "ConfigPaletteSize",
+                            "value": 5,
+                            "type": "number",
+                            "field": "textInput"
+                          }
+                        },
+                        "type": "object",
+                        "field": "dependentDropdownlist"
+                      },
+                      "configTextFont": {
+                        "name": "ConfigTextFont",
+                        "value": {
+                          "name": "TextFontSimplex",
+                          "value": "FontHersheySimplex",
+                          "type": "string",
+                          "field": "option"
+                        },
+                        "type": "object",
+                        "field": "dropdownlist"
+                      },
+                      "configTextFontScale": {
+                        "name": "ConfigTextFontScale",
+                        "value": 0.5,
+                        "type": "number",
+                        "field": "textInput"
+                      },
+                      "configTextFontThickness": {
+                        "name": "ConfigTextFontThickness",
+                        "value": 1,
+                        "type": "number",
+                        "field": "textInput"
+                      },
+                      "configTextColor": {
+                        "name": "ConfigTextColor",
+                        "value": "#FFFFFF",
+                        "type": "string",
+                        "field": "textInput"
+                      },
+                      "configColorAxis": {
+                        "name": "ConfigColorAxis",
+                        "value": {
+                          "name": "CLASS",
+                          "value": "CLASS",
+                          "type": "string",
+                          "field": "option"
+                        },
+                        "type": "object",
+                        "field": "dropdownlist"
+                      },
+                      "configTextPosition": {
+                        "name": "ConfigTextPosition",
+                        "value": {
+                          "name": "Top_left",
+                          "value": "Top_left",
+                          "type": "string",
+                          "field": "option"
+                        },
+                        "type": "object",
+                        "field": "dependentDropdownlist"
+                      },
+                      "configTextPadding": {
+                        "name": "ConfigTextPadding",
+                        "value": 2,
+                        "type": "number",
+                        "field": "textInput"
+                      }
+                    },
+                    "type": "object",
+                    "field": "dependentDropdownlist"
+                  }
+                }
+              },
+              "type": "object",
+              "field": "option"
+            },
+            "type": "executor",
+            "field": "dependentDropdownlist",
+            "restart": true
+          }
+        },
+        "debug": "False",
+        "api": "False",
+        "uID": "aiGPuT"
+      },
+      {
+        "type": "component",
+        "name": "ImageLoad",
+        "configs": {
+          "executor": {
+            "name": "ConfigExecutor",
+            "value": {
+              "name": "ImageLoad",
+              "value": {
+                "name": "ImageLoad",
+                "configs": {
+                  "imageFieldType": {
+                    "name": "imageFieldType",
+                    "value": {
+                      "name": "base64",
+                      "value": "base64",
+                      "type": "string",
+                      "field": "option",
+                      "path": {
+                        "name": "basedata",
+                        "value": "__BASE64_PLACEHOLDER__",
+                        "type": "string",
+                        "field": "textInput"
+                      }
+                    },
+                    "type": "object",
+                    "field": "dependentDropdownlist"
+                  }
+                }
+              },
+              "type": "object",
+              "field": "option"
+            },
+            "type": "executor",
+            "field": "dependentDropdownlist"
+          }
+        },
+        "debug": "False",
+        "api": "False",
+        "uID": "nV9DgF"
+      },
+      {
+        "type": "widget",
+        "name": "ImageView",
+        "configs": {
+          "executor": {
+            "name": "ConfigExecutor",
+            "value": {
+              "name": "ImageView",
+              "value": {
+                "name": "ImageView",
+                "inputs": {
+                  "name": "ImageView",
+                  "inputImage": {
+                    "name": "inputImage",
+                    "type": "object"
+                  }
+                },
+                "configs": {
+                  "configKeepResolution": {
+                    "name": "ConfigKeepResolution",
+                    "value": {
+                      "name": "ConfigKeepResolutionTrue",
+                      "value": "True",
+                      "type": "bool",
+                      "field": "option"
+                    },
+                    "type": "object",
+                    "field": "dependentDropdownlist"
+                  }
+                }
+              },
+              "type": "object",
+              "field": "option"
+            },
+            "type": "executor",
+            "field": "dependentDropdownlist"
+          }
+        },
+        "debug": "False",
+        "api": "False",
+        "uID": "3EvUCc"
+      }
+    ],
+    "connections": [
+      {
+        "node": "aXuATh",
+        "nodeFrom": "nV9DgF",
+        "node_matching": {
+          "outputImage": "inputImage"
+        }
+      },
+      {
+        "node": "ykPbmp",
+        "nodeFrom": "nV9DgF",
+        "node_matching": {
+          "outputImage": "inputImage"
+        }
+      },
+      {
+        "node": "ykPbmp",
+        "nodeFrom": "aXuATh",
+        "node_matching": {
+          "outputDetections": "inputDetections"
+        }
+      },
+      {
+        "node": "DgbooY",
+        "nodeFrom": "ykPbmp",
+        "node_matching": {
+          "outputDetections": "inputDetection"
+        }
+      },
+      {
+        "node": "bDTmwV",
+        "nodeFrom": "nV9DgF",
+        "node_matching": {
+          "outputImage": "inputImage"
+        }
+      },
+      {
+        "node": "bDTmwV",
+        "nodeFrom": "aXuATh",
+        "node_matching": {
+          "outputDetections": "inputDetections"
+        }
+      },
+      {
+        "node": "yubrQR",
+        "nodeFrom": "aiGPuT",
+        "node_matching": {
+          "outputImage": "inputImage"
+        }
+      },
+      {
+        "node": "yubrQR",
+        "nodeFrom": "DgbooY",
+        "node_matching": {
+          "outputData": "inputData"
+        }
+      },
+      {
+        "node": "aiGPuT",
+        "nodeFrom": "bDTmwV",
+        "node_matching": {
+          "outputImage": "inputImage"
+        }
+      },
+      {
+        "node": "aiGPuT",
+        "nodeFrom": "ykPbmp",
+        "node_matching": {
+          "outputDetections": "inputDetections"
+        }
+      },
+      {
+        "node": "3EvUCc",
+        "nodeFrom": "yubrQR",
+        "node_matching": {
+          "outputImage": "inputImage"
+        }
+      }
+    ],
+    "outputs": {
+      "aXuATh-outputDetections": "list",
+      "ykPbmp-outputDetections": "list",
+      "DgbooY-outputData": "dict",
+      "bDTmwV-outputImage": "object",
+      "yubrQR-outputImage": "object",
+      "aiGPuT-outputImage": "object",
+      "nV9DgF-outputImage": "object",
+      "3EvUCc-outputContent": "html"
+    },
+    "app": {
+      "access-token": "OQnii109h5AQJB4iBH7vTqSirCqb67Zv",
+      "access-url": "http://dev.suite.novavision.ai/api/storage"
+    },
+    "mode": "debug",
+    "debug": "true",
+    "app_id": "2E6871",
+    "payload": [],
+    "ws_channel": "/ws/b64d0507ae81f188aa06ebc45f55639b",
+    "port": 3697,
+    "ssl": "DISABLE",
+    "service": "diginova-wsl"
+  },
+  "workspace": "4311359ed4969e8401880e3c1836fbe1",
+  "access-token": "k8tOmNYTFMlil7dsA9JQjAMzYfaaf-nf"
+}
