@@ -65,7 +65,7 @@ export default function Landing() {
           <div className="w-8 h-8 bg-electric-500 rounded-lg flex items-center justify-center glow-blue">
             <Activity className="w-5 h-5 text-white" />
           </div>
-          <span className="text-xl font-bold text-white tracking-tight drop-shadow-lg">SAÜ-Vision</span>
+          <span className="text-xl font-bold text-white tracking-tight drop-shadow-lg">SAÜ Vision</span>
         </div>
         <div className="flex gap-2 sm:gap-4 items-center">
           <ThemeToggle />
@@ -108,8 +108,8 @@ export default function Landing() {
 
 
           <h1 className="text-5xl md:text-7xl font-extrabold text-white tracking-tight mb-8 animate-slide-up drop-shadow-2xl text-balance">
-            Smart Campus, <br className="hidden md:block" />
-            <span className="gradient-text">Zero Friction.</span>
+            Unifying Facilities <br className="hidden md:block" />
+            <span className="gradient-text">And Events</span>
           </h1>
 
           <p className="mt-4 text-xl text-gray-200 max-w-2xl mx-auto mb-10 animate-slide-up drop-shadow-lg" style={{ animationDelay: '100ms' }}>

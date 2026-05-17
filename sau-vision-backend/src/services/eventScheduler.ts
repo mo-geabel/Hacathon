@@ -139,6 +139,9 @@ export async function concludeEvent(bookingId: string) {
 
   // 5. Send admin event-report to puq.ai
   (async () => {
+    const { getNovaVisionStats } = require("./novavision"); // dynamic import to prevent circular dependency issues
+    const visionStats = getNovaVisionStats();
+    
     const PUQ_ADMIN_WEBHOOK = "https://api.puq.ai/h/584d68b66834/sync";
     const lab = (booking as any).lab;
     const faculty = lab?.faculty;
@@ -163,6 +166,7 @@ export async function concludeEvent(bookingId: string) {
       responsible_admins:  adminsList.map((a) => `${a.fullName} (${a.email})`).join(", ") || "N/A",
       expected_attendees:  booking.expectedAttendees,
       actual_attendees:    attendedRegistrations.length,
+      max_video_attendance: visionStats.totalStudents, // <-- Injected from Nova Vision
       no_shows:            noShows.length,
       attendance_rate:     booking.expectedAttendees > 0
                              ? `${Math.round((attendedRegistrations.length / booking.expectedAttendees) * 100)}%`

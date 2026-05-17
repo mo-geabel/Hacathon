@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import type { Booking } from '../../types';
-import { Activity, Clock, Info, CheckCircle2 } from 'lucide-react';
+import { Activity, Clock, Info, CheckCircle2, Video } from 'lucide-react';
 import BookingDetailsModal from './BookingDetailsModal';
+import LiveTrackingModal from './LiveTrackingModal';
 
 interface LiveSessionsProps {
   bookings: Booking[];
@@ -9,6 +10,7 @@ interface LiveSessionsProps {
 
 export default function LiveSessionsTable({ bookings }: LiveSessionsProps) {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [selectedLiveBooking, setSelectedLiveBooking] = useState<Booking | null>(null);
   const [now, setNow] = useState(Date.now());
 
   // Update current time every minute to keep statuses real-time
@@ -88,7 +90,17 @@ export default function LiveSessionsTable({ bookings }: LiveSessionsProps) {
                       )}
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex items-center justify-end opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center justify-end opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity gap-2">
+                        {realTimeStatus === 'active' && (
+                          <button
+                            onClick={() => setSelectedLiveBooking(booking)}
+                            className="p-2 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-300 rounded-lg transition-colors border border-emerald-500/20 flex items-center gap-2"
+                            title="Live Monitoring"
+                          >
+                            <Video className="w-4 h-4 animate-pulse" />
+                            <span className="text-xs font-medium">Live Feed</span>
+                          </button>
+                        )}
                         <button
                           onClick={() => setSelectedBooking(booking)}
                           className="p-2 bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white rounded-lg transition-colors border border-white/10 flex items-center gap-2"
@@ -111,6 +123,13 @@ export default function LiveSessionsTable({ bookings }: LiveSessionsProps) {
         <BookingDetailsModal
           booking={selectedBooking}
           onClose={() => setSelectedBooking(null)}
+        />
+      )}
+
+      {selectedLiveBooking && (
+        <LiveTrackingModal
+          booking={selectedLiveBooking}
+          onClose={() => setSelectedLiveBooking(null)}
         />
       )}
     </>

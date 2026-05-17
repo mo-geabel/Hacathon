@@ -12,7 +12,7 @@ ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 const NOVA_API_URL  = process.env.NOVA_API_URL  || 'http://localhost:7001/api';
 const NOVA_API_KEY  = process.env.NOVAVISION_WEBHOOK_SECRET || 'G0xXI7ZgwAsKdPR7rcz4Wsu_c72RohNh';
 const DEFAULT_VIDEO = process.env.VIDEO_PATH    || path.join(process.cwd(), 'video.mp4');
-const FPS           = 2;
+const FPS           = 1;
 const EMPTY_TIMEOUT = 10_000; // ms
 
 // ─── State ───────────────────────────────────────────────────────────────────
@@ -81,7 +81,19 @@ async function sendFrame(framePath: string) {
   );
 
   const count = parsePersonCount(response.data);
-  return { raw: response.data, count };
+  
+  // Extract the rendered image (with bounding boxes) from the response JSON
+  const responseStr = JSON.stringify(response.data);
+  // Nova Vision returns the rendered frame in one of the node outputs as a data URL
+  const base64Matches = responseStr.match(/data:image\/[a-zA-Z]*;base64,[A-Za-z0-9+/=]+/g);
+  
+  let processedBase64 = null;
+  if (base64Matches && base64Matches.length > 0) {
+    // The last base64 string in the payload is typically the final rendered image from the ImageView node
+    processedBase64 = base64Matches[base64Matches.length - 1];
+  }
+
+  return { processedBase64, count };
 }
 
 function handleCount(count: number): void {
@@ -134,8 +146,8 @@ export async function processVideo(videoPath = DEFAULT_VIDEO): Promise<void> {
     console.log(`📸 Sending ${frames.length} frame(s) to Nova Vision…\n`);
 
     for (const frame of frames) {
-      const { raw, count } = await sendFrame(path.join(tmpDir, frame));
-      lastFrameResult = { frame, count, receivedAt: new Date().toISOString(), raw };
+      const { processedBase64, count } = await sendFrame(path.join(tmpDir, frame));
+      lastFrameResult = { frame, count, receivedAt: new Date().toISOString(), processedBase64 };
       console.log(`  [${frame}] 👥 ${count} person(s) detected`);
       handleCount(count);
     }
