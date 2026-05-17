@@ -10,13 +10,14 @@ import bookingsRoutes from "./routes/api/bookings";
 import registrationsRoutes from "./routes/api/registrations";
 import studentsRoutes from "./routes/api/students";
 import surveyRoutes from "./routes/api/survey";
+import novavisionRoutes from "./routes/api/novavision";
 import eventsRoutes from "./routes/api/events";
 
 const app = express();
 const PORT = process.env.PORT ?? 4000;
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
 
 // API Routes
 app.use("/api/auth", authRoutes);
@@ -26,6 +27,7 @@ app.use("/api/bookings", bookingsRoutes);
 app.use("/api/registrations", registrationsRoutes);
 app.use("/api/students", studentsRoutes);
 app.use("/api/survey", surveyRoutes);
+app.use("/api/novavision", novavisionRoutes);
 app.use("/api/events", eventsRoutes);
 
 // Health check
