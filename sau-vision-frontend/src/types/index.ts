@@ -59,6 +59,7 @@ export interface User {
   name: string;
   email: string;
   role: 'student' | 'admin';
+  eventRating?: number;
 }
 
 export interface OccupancyEvent {

@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import api from '../../lib/api';
 import {
   X, Calendar, Clock, Users, FileText, Loader2, Award,
-  CheckCircle2, AlertCircle, ChevronLeft, ChevronRight
+  CheckCircle2, AlertCircle, ChevronLeft, ChevronRight, Lock
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 interface TimeSlot {
   scheduledStart: string;
@@ -79,6 +80,7 @@ function getNextAvailableTimeSlot() {
 }
 
 export default function BookingFormModal({ lab, existingBooking, onClose, onSuccess }: BookingFormModalProps) {
+  const { user } = useAuth();
   const todayDateObj = new Date();
   // Format as YYYY-MM-DD using local time
   const today = todayDateObj.toLocaleDateString('en-CA');
@@ -387,17 +389,31 @@ export default function BookingFormModal({ lab, existingBooking, onClose, onSucc
 
             {/* Certificate Toggle */}
             <div 
-              className={`p-3 rounded-lg border transition-colors cursor-pointer flex items-start gap-3 ${requiresCertificate ? 'bg-amber-500/10 border-amber-500/30' : 'bg-slate-100 dark:bg-white/5 border-border hover:border-white/20'}`}
-              onClick={() => setRequiresCertificate(!requiresCertificate)}
+              className={`p-3 rounded-lg border transition-colors flex items-start gap-3 
+                ${user?.role === 'student' && (user?.eventRating ?? 5.0) < 4.0 
+                  ? 'bg-slate-100 dark:bg-white/5 border-border opacity-60 cursor-not-allowed' 
+                  : requiresCertificate 
+                    ? 'bg-amber-500/10 border-amber-500/30 cursor-pointer' 
+                    : 'bg-slate-100 dark:bg-white/5 border-border hover:border-white/20 cursor-pointer'}`}
+              onClick={() => {
+                if (user?.role === 'student' && (user?.eventRating ?? 5.0) < 4.0) return;
+                setRequiresCertificate(!requiresCertificate);
+              }}
             >
               <div className={`p-2 rounded-full ${requiresCertificate ? 'bg-amber-500/20 text-amber-400' : 'bg-white/10 text-slate-500 dark:text-gray-400'}`}>
-                <Award className="w-4 h-4" />
+                {user?.role === 'student' && (user?.eventRating ?? 5.0) < 4.0 ? <Lock className="w-4 h-4" /> : <Award className="w-4 h-4" />}
               </div>
               <div>
                 <h4 className={`text-sm font-medium ${requiresCertificate ? 'text-amber-400' : 'text-slate-600 dark:text-gray-300'}`}>Certified Event</h4>
-                <p className="text-xs text-slate-400 dark:text-gray-500 mt-0.5 leading-relaxed">
-                  Attendees will scan a QR code to join. After the event, puq.ai will automatically generate PDF certificates for all participants.
-                </p>
+                {user?.role === 'student' && (user?.eventRating ?? 5.0) < 4.0 ? (
+                  <p className="text-xs text-red-500 dark:text-red-400 mt-0.5 font-medium">
+                    A rating of 4.0 or higher is required to host certified events. Your rating: {(user?.eventRating ?? 0).toFixed(1)}
+                  </p>
+                ) : (
+                  <p className="text-xs text-slate-400 dark:text-gray-500 mt-0.5 leading-relaxed">
+                    Attendees will scan a QR code to join. After the event, puq.ai will automatically generate PDF certificates for all participants.
+                  </p>
+                )}
               </div>
               <div className="ml-auto mt-1 flex-shrink-0">
                 <div className={`w-8 h-4 rounded-full transition-colors relative ${requiresCertificate ? 'bg-amber-500' : 'bg-white dark:bg-navy-800'}`}>

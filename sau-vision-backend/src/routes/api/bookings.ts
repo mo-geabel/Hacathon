@@ -5,6 +5,7 @@ import { eq, and, gte, lt, or } from "drizzle-orm";
 import { requireAuth, requireAdmin, requireStudent } from "../../middleware/auth";
 import { geminiModel } from "../../services/gemini";
 import axios from "axios";
+import { concludeEvent } from "../../services/eventScheduler";
 
 const router = Router();
 
@@ -200,6 +201,16 @@ router.post("/", requireAuth, requireStudent, asyncHandler(async (req: Request, 
 
   if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) {
     res.status(400).json({ error: "Invalid scheduledStart / scheduledEnd" });
+    return;
+  }
+
+  // Check certification authorization
+  const student = await db.query.students.findFirst({
+    where: eq(students.id, studentId)
+  });
+
+  if (requiresCertificate && student && (student.eventRating ?? 5.0) < 4.0) {
+    res.status(403).json({ error: "A rating of 4.0 or higher is required to host certified events." });
     return;
   }
 
@@ -960,162 +971,18 @@ router.post("/:id/conclude", requireAuth, requireStudent, asyncHandler(async (re
     return;
   }
 
-  // 1. Find no-shows (registered but didn't attend)
-  const noShows = booking.registrations.filter((r: any) => r.status === "registered");
+  // Call the shared conclusion logic
+  const result = await concludeEvent(bookingId);
 
-  // 2. Punish no-shows
-  for (const noShow of noShows) {
-    // Update registration status to "no_show"
-    await db.update(registrations)
-      .set({ status: "no_show", updatedAt: new Date() })
-      .where(eq(registrations.id, noShow.id));
-
-    // Fetch the student
-    const student = await db.query.students.findFirst({
-      where: eq(students.id, (noShow as any).studentId)
-    });
-
-    if (student) {
-      // Decrease rating and increase ghosted count
-      // Rating drops by 0.5 (min 0)
-      const newRating = Math.max((student.eventRating || 5.0) - 0.5, 0);
-      const newGhostCount = (student.ghostedEventCount || 0) + 1;
-
-      await db.update(students)
-        .set({
-          eventRating: newRating,
-          ghostedEventCount: newGhostCount,
-          updatedAt: new Date()
-        })
-        .where(eq(students.id, student.id));
-
-      // Log punishment in their history
-      await db.insert(studentHistory).values({
-        studentId: student.id,
-        bookingId: booking.id,
-        eventType: "ghosted",
-        description: `Failed to attend event '${booking.title}'. Rating decreased to ${newRating.toFixed(1)} and ghost count increased.`
-      });
-    }
+  if (!result) {
+    res.status(500).json({ error: "Failed to conclude event." });
+    return;
   }
-
-  // 3. Mark booking as completed
-  const [completedBooking] = await db.update(bookings)
-    .set({ status: "completed", actualEnd: new Date(), updatedAt: new Date() })
-    .where(eq(bookings.id, booking.id))
-    .returning();
-
-  // 4. Send certificate webhooks to puq.ai for all attendees
-  const attendedRegistrations = await db.query.registrations.findMany({
-    where: and(
-      eq(registrations.bookingId, booking.id),
-      eq(registrations.status, "attended")
-    ),
-    with: {
-      student: { columns: { fullName: true, email: true } }
-    }
-  });
-
-  const PUQ_WEBHOOK = "https://api.puq.ai/h/570e414d8707/sync";
-
-  // Format the event date in Turkish locale (e.g. "16 Mayıs 2026")
-  const eventDate = new Date(booking.scheduledStart).toLocaleDateString("tr-TR", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-
-  // Fire-and-forget: send one webhook per attendee sequentially,
-  // with a 10-second gap between each so puq.ai receives one object at a time.
-  // Runs in the background — does NOT block the HTTP response.
-  (async () => {
-    const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-    for (let i = 0; i < attendedRegistrations.length; i++) {
-      const reg = attendedRegistrations[i];
-      const payload = {
-        participant_name: (reg as any).student?.fullName || "Unknown",
-        event_date: eventDate,
-        event_name: booking.title,
-        participant_email: (reg as any).student?.email || "",
-        organizer_name: (booking as any).student?.fullName || "Unknown Organizer",
-      };
-
-      try {
-        await axios.post(PUQ_WEBHOOK, payload, {
-          headers: { "Content-Type": "application/json" },
-          timeout: 8000,
-        });
-        console.log(`✅ [${i + 1}/${attendedRegistrations.length}] puq.ai certificate sent for: ${payload.participant_email}`);
-      } catch (err: any) {
-        console.error(`❌ [${i + 1}/${attendedRegistrations.length}] puq.ai webhook failed for ${payload.participant_email}:`, err.message);
-      }
-
-      // Wait 10 seconds before sending the next one (skip after the last)
-      if (i < attendedRegistrations.length - 1) {
-        await sleep(10000);
-      }
-    }
-
-    console.log(`🏁 puq.ai certificate loop complete. ${attendedRegistrations.length} certificate(s) processed.`);
-  })();
-
-  // 5. Send admin event-report to puq.ai (fire-and-forget, non-blocking)
-  //    One single payload with full event statistics for the lab admin
-  (async () => {
-    const PUQ_ADMIN_WEBHOOK = "https://api.puq.ai/h/584d68b66834/sync";
-    const lab = (booking as any).lab;
-    const faculty = lab?.faculty;
-    const adminsList: { fullName: string; email: string; jobTitle?: string }[] = faculty?.admins ?? [];
-
-    const attendeeNames = attendedRegistrations.map((r: any) => r.student?.fullName || "Unknown");
-    const noShowNames   = noShows.map((r: any) => r.studentId); // IDs only (names not loaded here)
-
-    const reportPayload = {
-      report_type:         "event_summary",
-      event_name:          booking.title,
-      event_description:   booking.description ?? "",
-      event_date:          new Date(booking.scheduledStart).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" }),
-      event_start_time:    new Date(booking.scheduledStart).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }),
-      event_end_time:      new Date(booking.scheduledEnd).toLocaleTimeString("tr-TR",   { hour: "2-digit", minute: "2-digit" }),
-      organizer_name:      (booking as any).student?.fullName ?? "Unknown",
-      organizer_email:     (booking as any).student?.email    ?? "",
-      lab_name:            lab?.name       ?? "Unknown Lab",
-      lab_room:            lab?.roomNumber ?? "N/A",
-      lab_floor:           lab != null ? `Floor ${lab.floor}` : "N/A",
-      faculty_name:        faculty?.name   ?? "Unknown Faculty",
-      responsible_admins:  adminsList.map((a) => `${a.fullName} (${a.email})`).join(", ") || "N/A",
-      expected_attendees:  booking.expectedAttendees,
-      actual_attendees:    attendedRegistrations.length,
-      no_shows:            noShows.length,
-      attendance_rate:     booking.expectedAttendees > 0
-                             ? `${Math.round((attendedRegistrations.length / booking.expectedAttendees) * 100)}%`
-                             : "N/A",
-      attendee_list:       attendeeNames.join(", ") || "None",
-      concluded_at:        new Date().toISOString(),
-    };
-
-    console.log("📊 Sending admin event report to puq.ai...");
-    try {
-      await axios.post(PUQ_ADMIN_WEBHOOK, reportPayload, {
-        headers: { "Content-Type": "application/json" },
-        timeout: 8000,
-      });
-      console.log("✅ Admin event report sent successfully.");
-    } catch (err: any) {
-      console.error("❌ Admin report webhook failed:", err.message);
-    }
-  })();
 
   res.json({
     message: "Event successfully concluded.",
-    booking: completedBooking,
-    stats: {
-      totalRegistrations: booking.registrations.length,
-      attended: booking.registrations.length - noShows.length,
-      noShowsPunished: noShows.length,
-      certificatesSent: attendedRegistrations.length,
-    }
+    booking: result.booking,
+    stats: result.stats
   });
 }));
 

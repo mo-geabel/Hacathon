@@ -126,9 +126,17 @@ export default function JoinEvent() {
             <MapPin className="w-3.5 h-3.5 text-electric-400" />{checkInResult?.labName}
           </p>
         </div>
-        <button onClick={() => navigate('/dashboard')} className="text-slate-500 dark:text-gray-400 hover:text-foreground text-sm font-medium transition-colors">
-          Go to my Dashboard
-        </button>
+        <div className="w-full max-w-sm space-y-3">
+          <button
+            onClick={() => navigate(`/booking/${bookingId}/feedback`)}
+            className="w-full py-4 bg-white text-navy-900 rounded-2xl font-bold text-sm hover:bg-electric-400 transition-all hover:scale-[1.01] shadow-[0_0_20px_rgba(59,130,246,0.2)] flex items-center justify-center gap-2"
+          >
+            ⭐ Rate This Event
+          </button>
+          <button onClick={() => navigate('/dashboard')} className="w-full text-slate-500 dark:text-gray-400 hover:text-foreground text-sm font-medium transition-colors py-2">
+            Go to my Dashboard
+          </button>
+        </div>
       </div>
     );
   }

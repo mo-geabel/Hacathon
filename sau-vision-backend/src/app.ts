@@ -33,6 +33,11 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok", service: "sau-vision-api", ts: new Date() });
 });
 
+import { startEventScheduler } from "./services/eventScheduler";
+
+// Start the background cron job for checking and concluding expired events
+startEventScheduler();
+
 app.listen(PORT, () => {
   console.log(`\n🚀 Server running → http://localhost:${PORT}`);
   console.log(`   Health check  → http://localhost:${PORT}/health\n`);
