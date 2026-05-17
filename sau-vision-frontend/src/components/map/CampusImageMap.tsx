@@ -8,7 +8,7 @@ import {
   useMapEvents,
 } from 'react-leaflet';
 import L from 'leaflet';
-import type { CampusEvent, Room } from '../../types';
+import type { CampusEvent, Room, Booking } from '../../types';
 import EventFormModal from './EventFormModal';
 import api from '../../lib/api';
 import { Trash2, Info } from 'lucide-react';
@@ -70,10 +70,28 @@ const getFacultyIcon = (color: string) => {
   });
 };
 
+// ── Helper: Custom Room Icon (Supports Pulse) ─────────────────────────────────
+const getRoomIcon = (color: string, isActive: boolean) => {
+  const html = `
+    <div class="relative w-5 h-5 flex items-center justify-center">
+      ${isActive ? `<span class="absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping" style="background-color: ${color};"></span>` : ''}
+      <span class="relative inline-flex rounded-full w-3.5 h-3.5 border-2 border-white shadow-sm" style="background-color: ${color};"></span>
+    </div>
+  `;
+  return L.divIcon({
+    html,
+    className: 'bg-transparent border-none',
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
+    popupAnchor: [0, -10],
+  });
+};
+
 // ── Main Component ────────────────────────────────────────────────────────────
 interface CampusImageMapProps {
   enableEventMode: boolean;
   rooms?: Room[];
+  searchQuery?: string;
   selectedFacultyId?: string | null;
   onFacultySelect?: (facultyId: string) => void;
   onClearFaculty?: () => void;
@@ -83,6 +101,7 @@ interface CampusImageMapProps {
 export default function CampusImageMap({ 
   enableEventMode, 
   rooms = [], 
+  searchQuery = '',
   selectedFacultyId,
   onFacultySelect,
   onClearFaculty,
@@ -118,6 +137,20 @@ export default function CampusImageMap({
       return f;
     });
   }, [rooms]);
+
+  // Filter visible faculties by the search query
+  const visibleFaculties = React.useMemo(() => {
+    if (!searchQuery.trim()) return faculties;
+    const q = searchQuery.toLowerCase();
+    return faculties.filter(f =>
+      f.name.toLowerCase().includes(q) ||
+      f.rooms.some(r =>
+        r.name.toLowerCase().includes(q) ||
+        r.location.toLowerCase().includes(q) ||
+        r.hardware.some(hw => hw.toLowerCase().includes(q))
+      )
+    );
+  }, [faculties, searchQuery]);
 
   // Fetch events from backend on mount
   useEffect(() => {
@@ -257,7 +290,7 @@ export default function CampusImageMap({
         ))}
 
         {/* Faculty markers */}
-        {!selectedFacultyId && faculties.map((faculty) => {
+        {!selectedFacultyId && visibleFaculties.map((faculty) => {
           const color = getOccupancyColor(faculty.avgOccupancy);
           return (
             <Marker
@@ -297,26 +330,43 @@ export default function CampusImageMap({
           const jitterLng = (room.lng || SAU_CENTER[1]) + (Math.cos(i * 100) * 0.0004);
           const color = getOccupancyColor(room.occupancyPercent);
           
+          const activeBookings = room.bookings?.filter(b => b.status === 'active') || [];
+          const upcomingBookings = room.bookings?.filter(b => b.status === 'approved' && b.scheduledStart && new Date(b.scheduledStart) > new Date()) || [];
+          const hasActiveBooking = activeBookings.length > 0;
+          
           return (
-            <CircleMarker
+            <Marker
               key={`room-${room.id}`}
-              center={[jitterLat, jitterLng]}
-              radius={9}
-              pathOptions={{
-                fillColor: color,
-                fillOpacity: 0.8,
-                color: '#ffffff',
-                weight: 2,
-              }}
+              position={[jitterLat, jitterLng]}
+              icon={getRoomIcon(color, hasActiveBooking)}
             >
               <Popup>
-                <div className="min-w-[180px] p-1">
+                <div className="min-w-[200px] p-1">
                   <h3 className="font-bold text-gray-900 text-base mb-1">{room.name}</h3>
                   <p className="text-xs text-slate-400 dark:text-gray-500 mb-3">{room.location}</p>
                   
-                  <div className="flex justify-between items-center mb-3 text-sm">
+                  <div className="flex justify-between items-center mb-3 text-sm border-b pb-2 border-gray-100">
                     <span className="text-gray-600 font-medium">Occupancy</span>
                     <span style={{ color }} className="font-bold">{room.occupancyPercent}%</span>
+                  </div>
+                  
+                  {/* Schedule Section */}
+                  <div className="mb-3 space-y-2">
+                    {activeBookings.length > 0 && activeBookings.map(b => (
+                      <div key={b.id} className="text-xs bg-emerald-50 text-emerald-700 p-1.5 rounded border border-emerald-200">
+                        <span className="font-bold">🔴 Live Now:</span> {b.title} <br/>
+                        <span className="text-[10px] opacity-80">Ends at {b.scheduledEnd ? new Date(b.scheduledEnd).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''}</span>
+                      </div>
+                    ))}
+                    {upcomingBookings.length > 0 && upcomingBookings.slice(0, 2).map(b => (
+                      <div key={b.id} className="text-xs bg-gray-50 text-gray-700 p-1.5 rounded border border-gray-200">
+                        <span className="font-bold">⏳ Upcoming:</span> {b.title} <br/>
+                        <span className="text-[10px] opacity-80">{b.scheduledStart ? new Date(b.scheduledStart).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''}</span>
+                      </div>
+                    ))}
+                    {activeBookings.length === 0 && upcomingBookings.length === 0 && (
+                      <div className="text-xs text-gray-400 italic">No scheduled events today.</div>
+                    )}
                   </div>
                   
                   {onRoomClick && (
@@ -329,7 +379,7 @@ export default function CampusImageMap({
                   )}
                 </div>
               </Popup>
-            </CircleMarker>
+            </Marker>
           );
         })}
 

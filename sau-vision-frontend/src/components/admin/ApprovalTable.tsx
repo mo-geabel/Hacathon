@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { Booking } from '../../types';
-import { Check, X, Clock, AlertTriangle, ShieldCheck } from 'lucide-react';
-import { cn } from '../../lib/utils';
+import { Check, X, Clock, AlertTriangle, ShieldCheck, Info } from 'lucide-react';
+import BookingDetailsModal from './BookingDetailsModal';
 
 interface ApprovalTableProps {
   bookings: Booking[];
@@ -10,6 +10,7 @@ interface ApprovalTableProps {
 }
 
 export default function ApprovalTable({ bookings, onApprove, onReject }: ApprovalTableProps) {
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
 
   const getReliabilityBadge = (score: number) => {
     if (score >= 90) return <span className="status-green px-2 py-0.5 rounded-md text-xs border">High ({score}%)</span>;
@@ -30,62 +31,77 @@ export default function ApprovalTable({ bookings, onApprove, onReject }: Approva
   }
 
   return (
-    <div className="glass-card overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-white dark:bg-navy-800/50 text-slate-500 dark:text-gray-400 border-b border-slate-200 dark:border-white/5 uppercase text-xs tracking-wider">
-            <tr>
-              <th className="px-6 py-4 font-medium">Student / Time</th>
-              <th className="px-6 py-4 font-medium">Room</th>
-              <th className="px-6 py-4 font-medium">Reliability Score</th>
-              <th className="px-6 py-4 font-medium text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-white/5">
-            {bookings.map((booking) => (
-              <tr key={booking.id} className="hover:bg-white/[0.02] transition-colors group">
-                <td className="px-6 py-4">
-                  <div className="font-medium text-foreground">{booking.studentName || booking.studentId}</div>
-                  <div className="text-slate-500 dark:text-gray-400 flex items-center gap-1.5 mt-1 text-xs">
-                    <Clock className="w-3 h-3" />
-                    {booking.date} at {booking.time} ({booking.duration}m)
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-slate-600 dark:text-gray-300 font-medium">
-                  {booking.roomName || 'Unknown Room'}
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-2">
-                    {getReliabilityBadge(booking.reliabilityScore)}
-                    {booking.reliabilityScore < 70 && (
-                      <AlertTriangle className="w-4 h-4 text-amber-500" />
-                    )}
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center justify-end gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => onReject(booking.id)}
-                      className="p-2 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors border border-red-500/20"
-                      title="Reject Booking"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => onApprove(booking.id)}
-                      className="p-2 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 rounded-lg transition-colors border border-emerald-500/20"
-                      title="Approve Booking"
-                    >
-                      <Check className="w-4 h-4" />
-                    </button>
-                  </div>
-                </td>
+    <>
+      <div className="glass-card overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-white dark:bg-navy-800/50 text-slate-500 dark:text-gray-400 border-b border-slate-200 dark:border-white/5 uppercase text-xs tracking-wider">
+              <tr>
+                <th className="px-6 py-4 font-medium">Student / Time</th>
+                <th className="px-6 py-4 font-medium">Room</th>
+                <th className="px-6 py-4 font-medium">Reliability Score</th>
+                <th className="px-6 py-4 font-medium text-right">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-white/5 divide-slate-200">
+              {bookings.map((booking) => (
+                <tr key={booking.id} className="hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors group">
+                  <td className="px-6 py-4">
+                    <div className="font-medium text-foreground">{booking.title || booking.studentName || booking.studentId}</div>
+                    <div className="text-slate-500 dark:text-gray-400 flex items-center gap-1.5 mt-1 text-xs">
+                      <Clock className="w-3 h-3" />
+                      {booking.date} at {booking.time} ({booking.duration}m)
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-slate-600 dark:text-gray-300 font-medium">
+                    {booking.roomName || 'Unknown Room'}
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2">
+                      {getReliabilityBadge(booking.reliabilityScore)}
+                      {booking.reliabilityScore < 70 && (
+                        <AlertTriangle className="w-4 h-4 text-amber-500" />
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center justify-end gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => setSelectedBooking(booking)}
+                        className="p-2 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-gray-300 hover:bg-slate-200 dark:hover:bg-white/10 rounded-lg transition-colors border border-slate-200 dark:border-white/10"
+                        title="View Details"
+                      >
+                        <Info className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => onReject(booking.id)}
+                        className="p-2 bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 rounded-lg transition-colors border border-red-500/20"
+                        title="Reject Booking"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => onApprove(booking.id)}
+                        className="p-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 rounded-lg transition-colors border border-emerald-500/20"
+                        title="Approve Booking"
+                      >
+                        <Check className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
+      
+      {selectedBooking && (
+        <BookingDetailsModal 
+          booking={selectedBooking} 
+          onClose={() => setSelectedBooking(null)} 
+        />
+      )}
+    </>
   );
 }
-

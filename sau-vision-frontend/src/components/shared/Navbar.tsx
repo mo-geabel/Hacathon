@@ -32,7 +32,7 @@ export default function Navbar() {
     }
   }
 
-  navLinks.push({ name: 'Campus Map', path: '/map', icon: Map });
+
 
   // Resolve where the logo should take the user
   const logoHref = !isAuthenticated ? '/' : user?.role === 'admin' ? '/admin' : '/dashboard';
@@ -134,7 +134,7 @@ export default function Navbar() {
               </Link>
             );
           })}
-          
+
           {isAuthenticated && (
             <button
               onClick={() => {

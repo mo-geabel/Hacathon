@@ -5,6 +5,7 @@ import { eq, and, gte, lt, or } from "drizzle-orm";
 import { requireAuth, requireAdmin, requireStudent } from "../../middleware/auth";
 import { geminiModel } from "../../services/gemini";
 import axios from "axios";
+import { concludeEvent } from "../../services/eventScheduler";
 
 const router = Router();
 
@@ -37,7 +38,7 @@ router.get("/", requireAuth, asyncHandler(async (req: Request, res: Response) =>
     return bookingsList.sort((a, b) => {
       const scoreA = calculateScore(a.student);
       const scoreB = calculateScore(b.student);
-      
+
       if (scoreB !== scoreA) return scoreB - scoreA;
       return a.createdAt.getTime() - b.createdAt.getTime();
     });
@@ -107,7 +108,7 @@ router.get("/", requireAuth, asyncHandler(async (req: Request, res: Response) =>
 // ─────────────────────────────────────────────────────────────────────────────
 router.get("/events", requireAuth, requireStudent, asyncHandler(async (req: Request, res: Response) => {
   const studentId = req.user!.id;
-  
+
   const allEvents = await db.query.bookings.findMany({
     where: and(
       or(eq(bookings.status, "approved"), eq(bookings.status, "active")),
@@ -125,7 +126,7 @@ router.get("/events", requireAuth, requireStudent, asyncHandler(async (req: Requ
 
   const formattedEvents = allEvents.map((event) => {
     const isRegistered = event.registrations.some((r: any) => r.studentId === studentId);
-    
+
     return {
       id: event.id,
       title: event.title,
@@ -203,6 +204,32 @@ router.post("/", requireAuth, requireStudent, asyncHandler(async (req: Request, 
     return;
   }
 
+  // Check certification authorization
+  const student = await db.query.students.findFirst({
+    where: eq(students.id, studentId)
+  });
+
+  if (requiresCertificate && student && (student.eventRating ?? 5.0) < 4.0) {
+    res.status(403).json({ error: "A rating of 4.0 or higher is required to host certified events." });
+    return;
+  }
+
+  // Check business hours 09:00 to 18:30
+  const startTotalMins = start.getHours() * 60 + start.getMinutes();
+  const endTotalMins = end.getHours() * 60 + end.getMinutes();
+  if (startTotalMins < 9 * 60 || endTotalMins > 18 * 60 + 30) {
+    res.status(400).json({ error: "Bookings must be between 09:00 and 18:30." });
+    return;
+  }
+
+  // Prevent booking in the past (allow a 5-minute grace period for latency)
+  const now = new Date();
+  const gracePeriodStart = new Date(now.getTime() - 5 * 60000);
+  if (start < gracePeriodStart) {
+    res.status(400).json({ error: "Cannot schedule a booking in the past." });
+    return;
+  }
+
   // Verify the lab exists and is active
   const lab = await db.query.labs.findFirst({
     where: and(eq(labs.id, labId), eq(labs.isActive, true)),
@@ -234,7 +261,7 @@ router.post("/", requireAuth, requireStudent, asyncHandler(async (req: Request, 
 
   if (conflict) {
     const conflictStart = conflict.scheduledStart.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    const conflictEnd   = conflict.scheduledEnd.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const conflictEnd = conflict.scheduledEnd.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     res.status(409).json({
       error: `This lab is already booked from ${conflictStart} to ${conflictEnd}. Please choose a different time slot.`,
       conflict: {
@@ -298,7 +325,7 @@ router.post("/parse", requireAuth, requireStudent, asyncHandler(async (req: Requ
   let availableLabs = candidateLabs;
   if (scheduledStart && scheduledEnd) {
     const start = new Date(scheduledStart);
-    const end   = new Date(scheduledEnd);
+    const end = new Date(scheduledEnd);
     if (!isNaN(start.getTime()) && !isNaN(end.getTime()) && end > start) {
       const blockedBookings = await db.query.bookings.findMany({
         where: or(
@@ -384,7 +411,7 @@ If no lab matches, return an empty "suggestions" array and explain in "bookingDe
 
     const result = await geminiModel.generateContent(aiPrompt);
     let responseText = result.response.text();
-    
+
     // Strip markdown code fences if Gemini wraps the JSON in them (defensive)
     responseText = responseText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
 
@@ -542,6 +569,14 @@ router.patch("/:id", requireAuth, requireStudent, asyncHandler(async (req: Reque
         res.status(400).json({ error: "Invalid scheduledStart / scheduledEnd" });
         return;
       }
+
+      // Check business hours 09:00 to 18:30
+      const startTotalMins = start.getHours() * 60 + start.getMinutes();
+      const endTotalMins = end.getHours() * 60 + end.getMinutes();
+      if (startTotalMins < 9 * 60 || endTotalMins > 18 * 60 + 30) {
+        res.status(400).json({ error: "Bookings must be between 09:00 and 18:30." });
+        return;
+      }
       updates.scheduledStart = start;
       updates.scheduledEnd = end;
 
@@ -574,7 +609,7 @@ router.patch("/:id", requireAuth, requireStudent, asyncHandler(async (req: Reque
 
       if (conflict) {
         const conflictStart = conflict.scheduledStart.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-        const conflictEnd   = conflict.scheduledEnd.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        const conflictEnd = conflict.scheduledEnd.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
         res.status(409).json({
           error: `This lab is already booked from ${conflictStart} to ${conflictEnd}. Please choose a different time slot.`,
           conflict: {
@@ -649,7 +684,7 @@ router.patch("/:id/status", requireAuth, requireAdmin, asyncHandler(async (req: 
 
     if (conflict) {
       const conflictStart = conflict.scheduledStart.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-      const conflictEnd   = conflict.scheduledEnd.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      const conflictEnd = conflict.scheduledEnd.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
       res.status(409).json({
         error: `Cannot approve: This lab is already booked from ${conflictStart} to ${conflictEnd}.`,
         conflict: {
@@ -777,7 +812,7 @@ router.post("/checkin", requireAuth, asyncHandler(async (req: Request, res: Resp
   const scheduledEnd = new Date(reg.booking.scheduledEnd);
   const now = new Date();
   const threeHoursInMs = 3 * 60 * 60 * 1000;
-  
+
   if (now.getTime() > scheduledEnd.getTime() + threeHoursInMs) {
     res.status(403).json({ error: "Attendance window closed. It has been more than 3 hours since the event ended." });
     return;
@@ -823,7 +858,7 @@ router.post("/:id/self-checkin", requireAuth, requireStudent, asyncHandler(async
   const scheduledEnd = new Date(booking.scheduledEnd);
   const now = new Date();
   const threeHoursInMs = 3 * 60 * 60 * 1000;
-  
+
   if (now.getTime() > scheduledEnd.getTime() + threeHoursInMs) {
     res.status(403).json({ error: "Attendance window closed. It has been more than 3 hours since the event ended." });
     return;
@@ -903,7 +938,22 @@ router.post("/:id/conclude", requireAuth, requireStudent, asyncHandler(async (re
 
   const booking = await db.query.bookings.findFirst({
     where: eq(bookings.id, bookingId),
-    with: { registrations: true }
+    with: {
+      registrations: true,
+      student: { columns: { fullName: true, email: true } },
+      lab: {
+        with: {
+          faculty: {
+            with: {
+              admins: {
+                columns: { fullName: true, email: true, jobTitle: true },
+                where: (a: any, { eq: eqFn }: any) => eqFn(a.isActive, true),
+              },
+            },
+          },
+        },
+      },
+    }
   });
 
   if (!booking) {
@@ -921,59 +971,18 @@ router.post("/:id/conclude", requireAuth, requireStudent, asyncHandler(async (re
     return;
   }
 
-  // 1. Find no-shows (registered but didn't attend)
-  const noShows = booking.registrations.filter((r: any) => r.status === "registered");
+  // Call the shared conclusion logic
+  const result = await concludeEvent(bookingId);
 
-  // 2. Punish no-shows
-  for (const noShow of noShows) {
-    // Update registration status to "no_show"
-    await db.update(registrations)
-      .set({ status: "no_show", updatedAt: new Date() })
-      .where(eq(registrations.id, noShow.id));
-
-    // Fetch the student
-    const student = await db.query.students.findFirst({
-      where: eq(students.id, (noShow as any).studentId)
-    });
-
-    if (student) {
-      // Decrease rating and increase ghosted count
-      // Rating drops by 0.5 (min 0)
-      const newRating = Math.max((student.eventRating || 5.0) - 0.5, 0);
-      const newGhostCount = (student.ghostedEventCount || 0) + 1;
-
-      await db.update(students)
-        .set({
-          eventRating: newRating,
-          ghostedEventCount: newGhostCount,
-          updatedAt: new Date()
-        })
-        .where(eq(students.id, student.id));
-
-      // Log punishment in their history
-      await db.insert(studentHistory).values({
-        studentId: student.id,
-        bookingId: booking.id,
-        eventType: "ghosted",
-        description: `Failed to attend event '${booking.title}'. Rating decreased to ${newRating.toFixed(1)} and ghost count increased.`
-      });
-    }
+  if (!result) {
+    res.status(500).json({ error: "Failed to conclude event." });
+    return;
   }
-
-  // 3. Mark booking as completed
-  const [completedBooking] = await db.update(bookings)
-    .set({ status: "completed", actualEnd: new Date(), updatedAt: new Date() })
-    .where(eq(bookings.id, booking.id))
-    .returning();
 
   res.json({
     message: "Event successfully concluded.",
-    booking: completedBooking,
-    stats: {
-      totalRegistrations: booking.registrations.length,
-      attended: booking.registrations.length - noShows.length,
-      noShowsPunished: noShows.length
-    }
+    booking: result.booking,
+    stats: result.stats
   });
 }));
 

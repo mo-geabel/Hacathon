@@ -60,20 +60,20 @@ export default function Landing() {
     <div className="min-h-screen bg-background text-foreground overflow-hidden selection:bg-electric-500/30">
 
       {/* Navbar */}
-      <nav className="absolute top-0 left-0 right-0 p-6 flex justify-between items-center z-50">
+      <nav className="absolute top-0 left-0 right-0 p-4 sm:p-6 flex justify-between items-center z-50">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-electric-500 rounded-lg flex items-center justify-center glow-blue">
             <Activity className="w-5 h-5 text-white" />
           </div>
           <span className="text-xl font-bold text-white tracking-tight drop-shadow-lg">SAÜ-Vision</span>
         </div>
-        <div className="flex gap-4 items-center">
+        <div className="flex gap-2 sm:gap-4 items-center">
           <ThemeToggle />
           <Link to="/map" className="text-sm font-medium text-white/80 hover:text-white transition-colors drop-shadow">
             Campus Map
           </Link>
-          <Link to="/login" className="btn-primary flex items-center gap-2 text-sm px-5 py-2">
-            Sign In <ArrowRight className="w-4 h-4" />
+          <Link to="/login" className="btn-primary flex items-center gap-2 text-xs sm:text-sm px-4 py-2">
+            Sign In <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 hidden xs:block" />
           </Link>
         </div>
       </nav>
@@ -105,10 +105,7 @@ export default function Landing() {
         {/* Hero Content */}
         <div className="relative z-30 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
 
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-electric-500/20 border border-electric-500/30 text-electric-300 text-sm font-medium mb-8 animate-fade-in backdrop-blur-sm">
-            <Sparkles className="w-4 h-4" />
-            <span>Next-Gen Facility Management</span>
-          </div>
+
 
           <h1 className="text-5xl md:text-7xl font-extrabold text-white tracking-tight mb-8 animate-slide-up drop-shadow-2xl text-balance">
             Smart Campus, <br className="hidden md:block" />
@@ -149,11 +146,10 @@ export default function Landing() {
             <button
               key={i}
               onClick={() => goToSlide(i)}
-              className={`transition-all duration-300 rounded-full ${
-                i === currentSlide
-                  ? 'w-8 h-2 bg-electric-400'
-                  : 'w-2 h-2 bg-white/30 hover:bg-white/60'
-              }`}
+              className={`transition-all duration-300 rounded-full ${i === currentSlide
+                ? 'w-8 h-2 bg-electric-400'
+                : 'w-2 h-2 bg-white/30 hover:bg-white/60'
+                }`}
             />
           ))}
         </div>

@@ -122,7 +122,8 @@ router.post("/login", asyncHandler(async (req: Request, res: Response) => {
       universityId: user.universityId,
       fullName: user.fullName,
       email: user.email,
-      role
+      role,
+      ...(role === "student" ? { eventRating: (user as any).eventRating } : {})
     }
   });
 }));

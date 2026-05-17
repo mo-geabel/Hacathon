@@ -24,9 +24,32 @@ router.get("/", asyncHandler(async (req: Request, res: Response) => {
   if (typeof type === "string")      filters.push(eq(labs.type, type as any));
   if (typeof status === "string")    filters.push(eq(labs.status, status as any));
 
+  // Build day boundaries in UTC for today's bookings
+  const today = new Date();
+  const dateStr = today.toISOString().split("T")[0];
+  const dayStart = new Date(`${dateStr}T00:00:00.000Z`);
+  const dayEnd   = new Date(`${dateStr}T23:59:59.999Z`);
+
   const allLabs = await db.query.labs.findMany({
     where: and(...filters),
-    with: { faculty: true },
+    with: { 
+      faculty: true,
+      bookings: {
+        where: and(
+          or(eq(bookings.status, "approved"), eq(bookings.status, "active")),
+          lt(bookings.scheduledStart, dayEnd),
+          gte(bookings.scheduledEnd, dayStart)
+        ),
+        columns: {
+          id: true,
+          title: true,
+          description: true,
+          scheduledStart: true,
+          scheduledEnd: true,
+          status: true
+        }
+      }
+    },
   });
 
   res.json(allLabs);

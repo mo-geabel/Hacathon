@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import api from '../../lib/api';
 import {
   X, Calendar, Clock, Users, FileText, Loader2, Award,
-  CheckCircle2, AlertCircle, ChevronLeft, ChevronRight
+  CheckCircle2, AlertCircle, ChevronLeft, ChevronRight, Lock
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 interface TimeSlot {
   scheduledStart: string;
@@ -32,9 +33,9 @@ interface BookingFormModalProps {
   onSuccess: () => void;
 }
 
-// Generate 30-minute time slots from 08:00 to 22:00
-const TIME_OPTIONS = Array.from({ length: 29 }, (_, i) => {
-  const totalMins = 8 * 60 + i * 30;
+// Generate 30-minute time slots from 09:00 to 18:30
+const TIME_OPTIONS = Array.from({ length: 20 }, (_, i) => {
+  const totalMins = 9 * 60 + i * 30;
   const h = Math.floor(totalMins / 60).toString().padStart(2, '0');
   const m = (totalMins % 60).toString().padStart(2, '0');
   return `${h}:${m}`;
@@ -48,11 +49,62 @@ function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
+// Helper to get smart default slots
+function getNextAvailableTimeSlot() {
+  const now = new Date();
+  let h = now.getHours();
+  let m = now.getMinutes();
+
+  if (m < 30) {
+    m = 30;
+  } else {
+    h += 1;
+    m = 0;
+  }
+
+  // Clamp to our business hours 09:00 to 18:30
+  if (h < 9) { h = 9; m = 0; }
+  // If we calculate a start time past 18:00, clamp it to 18:00 so a 30m slot fits before 18:30
+  if (h > 18 || (h === 18 && m > 0)) { h = 18; m = 0; }
+
+  const startH = h.toString().padStart(2, '0');
+  const startM = m.toString().padStart(2, '0');
+  const startTime = `${startH}:${startM}`;
+
+  let endH = h + 2;
+  let endM = m;
+  if (endH > 18 || (endH === 18 && endM > 30)) { endH = 18; endM = 30; }
+  const endTime = `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
+
+  return { startTime, endTime };
+}
+
 export default function BookingFormModal({ lab, existingBooking, onClose, onSuccess }: BookingFormModalProps) {
-  const today = new Date().toISOString().split('T')[0];
-  const [date, setDate] = useState(existingBooking?.date || today);
-  const [startTime, setStartTime] = useState(existingBooking?.startTime || '09:00');
-  const [endTime, setEndTime] = useState(existingBooking?.endTime || '11:00');
+  const { user } = useAuth();
+  const todayDateObj = new Date();
+  // Format as YYYY-MM-DD using local time
+  const today = todayDateObj.toLocaleDateString('en-CA');
+  const defaultSlots = getNextAvailableTimeSlot();
+
+  // If it's very late (past 18:00), default to tomorrow since bookings end at 18:30
+  const isLate = todayDateObj.getHours() >= 18;
+  const defaultDate = isLate ? new Date(todayDateObj.getTime() + 86400000).toLocaleDateString('en-CA') : today;
+  const initialStart = isLate ? '09:00' : defaultSlots.startTime;
+  const initialEnd = isLate ? '11:00' : defaultSlots.endTime;
+
+  const [date, setDate] = useState(existingBooking?.date || defaultDate);
+  const [startTime, setStartTime] = useState(existingBooking?.startTime || initialStart);
+  const [endTime, setEndTime] = useState(existingBooking?.endTime || initialEnd);
+
+  // When startTime changes, push endTime forward if it's no longer after startTime
+  const handleStartTimeChange = (newStart: string) => {
+    setStartTime(newStart);
+    // Find the next slot after newStart in TIME_OPTIONS and set as endTime if current endTime is invalid
+    if (endTime <= newStart) {
+      const nextSlot = TIME_OPTIONS.find(t => t > newStart);
+      setEndTime(nextSlot || '18:30');
+    }
+  };
   const [title, setTitle] = useState(existingBooking?.title || '');
   const [description, setDescription] = useState(existingBooking?.description || '');
   const [attendees, setAttendees] = useState(existingBooking?.expectedAttendees || 1);
@@ -63,7 +115,6 @@ export default function BookingFormModal({ lab, existingBooking, onClose, onSucc
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
-  // Load booked slots when the lab or date changes
   useEffect(() => {
     const fetchSlots = async () => {
       setSlotsLoading(true);
@@ -79,21 +130,35 @@ export default function BookingFormModal({ lab, existingBooking, onClose, onSucc
     fetchSlots();
   }, [lab.id, date]);
 
-  // Check if a given time slot overlaps any approved/active booking
   const isSlotTaken = (slotTime: string) => {
     const slotStart = new Date(`${date}T${slotTime}:00`);
     return bookedSlots.some((b: any) => {
-      // If we are editing, we don't care if our own existing booking overlaps itself (though bookedSlots 
-      // from API only returns approved/active, so it shouldn't be here anyway if it's pending).
-      // But just in case Option B changes, we exclude it if present.
       if (existingBooking && b.bookingId === existingBooking.id) return false;
-      
       const bStart = new Date(b.scheduledStart);
       const bEnd = new Date(b.scheduledEnd);
       return slotStart >= bStart && slotStart < bEnd;
     });
   };
 
+  const getAvailableTimeOptions = () => {
+    const now = new Date();
+    const currentH = now.getHours();
+    const currentM = now.getMinutes();
+    const isToday = date === today;
+
+    return TIME_OPTIONS.map(t => {
+      let isPast = false;
+      if (isToday) {
+        const [h, m] = t.split(':').map(Number);
+        if (h < currentH || (h === currentH && m < currentM)) {
+          isPast = true;
+        }
+      }
+      return { time: t, isPast };
+    });
+  };
+
+  const timeOptionsWithPast = getAvailableTimeOptions();
   const isEndBeforeStart = endTime <= startTime;
   const isAttendeesOverCapacity = attendees > lab.capacity;
 
@@ -104,6 +169,12 @@ export default function BookingFormModal({ lab, existingBooking, onClose, onSucc
     if (!title.trim()) { setError('Please add a session title.'); return; }
     if (isEndBeforeStart) { setError('End time must be after start time.'); return; }
     if (isAttendeesOverCapacity) { setError(`Max capacity is ${lab.capacity} for this lab.`); return; }
+
+    const selectedStartObj = new Date(`${date}T${startTime}:00`);
+    if (selectedStartObj < new Date()) {
+      setError('You cannot request a booking in the past.');
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -140,7 +211,7 @@ export default function BookingFormModal({ lab, existingBooking, onClose, onSucc
       style={{ backdropFilter: 'blur(8px)', backgroundColor: 'rgba(0,0,0,0.7)' }}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="w-full max-w-lg bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-slide-up">
+      <div className="w-full max-w-lg bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-slide-up flex flex-col max-h-[90vh]">
 
         {/* Header */}
         <div className="flex items-start justify-between px-6 py-5 border-b border-slate-200 dark:border-white/5 bg-white/[0.02]">
@@ -176,7 +247,7 @@ export default function BookingFormModal({ lab, existingBooking, onClose, onSucc
             </p>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          <form onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto flex-1">
 
             {/* Error Banner */}
             {error && (
@@ -208,14 +279,15 @@ export default function BookingFormModal({ lab, existingBooking, onClose, onSucc
                 </label>
                 <select
                   value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
+                  onChange={(e) => handleStartTimeChange(e.target.value)}
                   className="w-full bg-slate-100 dark:bg-white/5 border border-border rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-electric-500"
                 >
-                  {TIME_OPTIONS.map((t) => {
+                  {timeOptionsWithPast.map(({ time: t, isPast }) => {
                     const taken = isSlotTaken(t);
+                    const disabled = taken || isPast;
                     return (
-                      <option key={t} value={t} disabled={taken} className={taken ? 'text-gray-600' : ''}>
-                        {t}{taken ? ' — taken' : ''}
+                      <option key={t} value={t} disabled={disabled} className={disabled ? 'text-gray-400' : 'text-black'}>
+                        {t}{taken ? ' — taken' : isPast ? ' — past' : ''}
                       </option>
                     );
                   })}
@@ -230,9 +302,16 @@ export default function BookingFormModal({ lab, existingBooking, onClose, onSucc
                   onChange={(e) => setEndTime(e.target.value)}
                   className="w-full bg-slate-100 dark:bg-white/5 border border-border rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-electric-500"
                 >
-                  {TIME_OPTIONS.map((t) => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
+                  {timeOptionsWithPast.map(({ time: t, isPast }) => {
+                    // Disable if the slot is at or before the start time, or if it's in the past today
+                    const isBeforeOrEqualStart = t <= startTime;
+                    const disabled = isBeforeOrEqualStart || (isPast && date === today);
+                    return (
+                      <option key={t} value={t} disabled={disabled} className={disabled ? 'text-gray-400' : 'text-black'}>
+                        {t}{isBeforeOrEqualStart ? ' — before start' : isPast && date === today ? ' — past' : ''}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
             </div>
@@ -310,17 +389,31 @@ export default function BookingFormModal({ lab, existingBooking, onClose, onSucc
 
             {/* Certificate Toggle */}
             <div 
-              className={`p-3 rounded-lg border transition-colors cursor-pointer flex items-start gap-3 ${requiresCertificate ? 'bg-amber-500/10 border-amber-500/30' : 'bg-slate-100 dark:bg-white/5 border-border hover:border-white/20'}`}
-              onClick={() => setRequiresCertificate(!requiresCertificate)}
+              className={`p-3 rounded-lg border transition-colors flex items-start gap-3 
+                ${user?.role === 'student' && (user?.eventRating ?? 5.0) < 4.0 
+                  ? 'bg-slate-100 dark:bg-white/5 border-border opacity-60 cursor-not-allowed' 
+                  : requiresCertificate 
+                    ? 'bg-amber-500/10 border-amber-500/30 cursor-pointer' 
+                    : 'bg-slate-100 dark:bg-white/5 border-border hover:border-white/20 cursor-pointer'}`}
+              onClick={() => {
+                if (user?.role === 'student' && (user?.eventRating ?? 5.0) < 4.0) return;
+                setRequiresCertificate(!requiresCertificate);
+              }}
             >
               <div className={`p-2 rounded-full ${requiresCertificate ? 'bg-amber-500/20 text-amber-400' : 'bg-white/10 text-slate-500 dark:text-gray-400'}`}>
-                <Award className="w-4 h-4" />
+                {user?.role === 'student' && (user?.eventRating ?? 5.0) < 4.0 ? <Lock className="w-4 h-4" /> : <Award className="w-4 h-4" />}
               </div>
               <div>
                 <h4 className={`text-sm font-medium ${requiresCertificate ? 'text-amber-400' : 'text-slate-600 dark:text-gray-300'}`}>Certified Event</h4>
-                <p className="text-xs text-slate-400 dark:text-gray-500 mt-0.5 leading-relaxed">
-                  Attendees will scan a QR code to join. After the event, puq.ai will automatically generate PDF certificates for all participants.
-                </p>
+                {user?.role === 'student' && (user?.eventRating ?? 5.0) < 4.0 ? (
+                  <p className="text-xs text-red-500 dark:text-red-400 mt-0.5 font-medium">
+                    A rating of 4.0 or higher is required to host certified events. Your rating: {(user?.eventRating ?? 0).toFixed(1)}
+                  </p>
+                ) : (
+                  <p className="text-xs text-slate-400 dark:text-gray-500 mt-0.5 leading-relaxed">
+                    Attendees will scan a QR code to join. After the event, puq.ai will automatically generate PDF certificates for all participants.
+                  </p>
+                )}
               </div>
               <div className="ml-auto mt-1 flex-shrink-0">
                 <div className={`w-8 h-4 rounded-full transition-colors relative ${requiresCertificate ? 'bg-amber-500' : 'bg-white dark:bg-navy-800'}`}>

@@ -35,7 +35,7 @@ export default function EventQrModal({ bookingId, eventTitle, labName, scheduled
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-fade-in"
       onClick={handleBackdrop}
     >
-      <div className="relative w-full max-w-sm bg-card border border-border rounded-3xl shadow-2xl overflow-hidden">
+      <div className="relative w-full max-w-sm bg-card border border-border rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-slate-200 dark:border-white/5">
           <div>
@@ -53,7 +53,7 @@ export default function EventQrModal({ bookingId, eventTitle, labName, scheduled
         </div>
 
         {/* Body */}
-        <div className="p-6 flex flex-col items-center">
+        <div className="p-6 flex flex-col items-center overflow-y-auto flex-1">
           {/* Event details */}
           {(labName || scheduledStart) && (
             <div className="w-full space-y-2 mb-5">

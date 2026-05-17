@@ -16,7 +16,7 @@ import JoinEvent from '../pages/JoinEvent';
 import EventAttendees from '../pages/EventAttendees';
 import EventFeedback from '../pages/EventFeedback';
 
-// ── Shared Layout with Navbar ─────────────────────────────────────────────────
+// ── Shared Layout with Navbar (for public/admin pages) ────────────────────────
 const Layout = () => (
   <div className="page-container relative">
     <Navbar />
@@ -26,9 +26,10 @@ const Layout = () => (
   </div>
 );
 
+// ── Sidebar Layout (no Navbar — Dashboard, Map, Events handle their own nav) ──
+const SidebarLayout = () => <Outlet />;
+
 // ── Protected Route ───────────────────────────────────────────────────────────
-// Wraps any route that requires authentication.
-// allowedRoles: if provided, redirects users with the wrong role to their home.
 const ProtectedRoute = ({
   children,
   allowedRoles,
@@ -46,12 +47,10 @@ const ProtectedRoute = ({
     );
   }
 
-  // Not logged in → send to /login
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
-  // Logged in but wrong role → send to their correct home
   if (allowedRoles && user && !allowedRoles.includes(user.role)) {
     return <Navigate to={user.role === 'admin' ? '/admin' : '/dashboard'} replace />;
   }
@@ -61,41 +60,14 @@ const ProtectedRoute = ({
 
 // ── Router ────────────────────────────────────────────────────────────────────
 export const router = createBrowserRouter([
+  // ── Pages WITH the top Navbar (Landing, Admin, utility pages) ──────────────
   {
-    // All routes inside Layout share the Navbar
     element: <Layout />,
     children: [
-      // ── Public ──────────────────────────────────────────────────────────────
-      {
-        path: '/',
-        element: <Landing />,
-      },
-      {
-        // Map is publicly viewable; "Pin Event" button is conditionally shown
-        path: '/map',
-        element: <MapPage />,
-      },
+      { path: '/', element: <Landing /> },
 
-      // ── Student-only ────────────────────────────────────────────────────────
+      // Checkin / attendees / feedback — utility pages that keep navbar
       {
-        path: '/events',
-        element: (
-          <ProtectedRoute allowedRoles={['student']}>
-            <EventsDashboard />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: '/dashboard',
-        element: (
-          <ProtectedRoute allowedRoles={['student']}>
-            <Dashboard />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        // CheckIn page requires authentication — a student must be logged in
-        // to view their booking's QR code
         path: '/booking/:id/checkin',
         element: (
           <ProtectedRoute allowedRoles={['student']}>
@@ -104,7 +76,6 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        // Attendees list — only the organizer can view this
         path: '/booking/:bookingId/attendees',
         element: (
           <ProtectedRoute allowedRoles={['student']}>
@@ -113,7 +84,6 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        // Survey / feedback page for attended guests
         path: '/booking/:bookingId/feedback',
         element: (
           <ProtectedRoute allowedRoles={['student']}>
@@ -122,7 +92,7 @@ export const router = createBrowserRouter([
         ),
       },
 
-      // ── Admin-only ──────────────────────────────────────────────────────────
+      // Admin
       {
         path: '/admin',
         element: (
@@ -142,21 +112,39 @@ export const router = createBrowserRouter([
     ],
   },
 
-  // Login lives outside Layout (no Navbar)
+  // ── Pages WITH the AppSidebar — NO top Navbar ─────────────────────────────
   {
-    path: '/login',
-    element: <Login />,
+    element: <SidebarLayout />,
+    children: [
+      // Map is publicly viewable
+      { path: '/map', element: <MapPage /> },
+
+      // Student-only sidebar pages
+      {
+        path: '/dashboard',
+        element: (
+          <ProtectedRoute allowedRoles={['student']}>
+            <Dashboard />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/events',
+        element: (
+          <ProtectedRoute allowedRoles={['student']}>
+            <EventsDashboard />
+          </ProtectedRoute>
+        ),
+      },
+    ],
   },
+
+  // Login (no Navbar, no Sidebar)
+  { path: '/login', element: <Login /> },
 
   // QR Scan Landing Page (public, handles its own auth redirect)
-  {
-    path: '/join/:bookingId',
-    element: <JoinEvent />,
-  },
+  { path: '/join/:bookingId', element: <JoinEvent /> },
 
-  // Catch-all: any unknown URL → landing
-  {
-    path: '*',
-    element: <Navigate to="/" replace />,
-  },
+  // Catch-all
+  { path: '*', element: <Navigate to="/" replace /> },
 ]);

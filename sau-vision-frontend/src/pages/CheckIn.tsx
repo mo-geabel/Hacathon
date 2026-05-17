@@ -143,7 +143,7 @@ export default function CheckIn() {
   const roomLabel = `Floor ${booking.lab.floor}, Room ${booking.lab.roomNumber}`;
 
   return (
-    <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8 relative">
+    <div className="min-h-screen bg-background py-8 sm:py-12 px-4 sm:px-6 lg:px-8 relative">
       <UrgentModal
         isOpen={showUrgentModal}
         minutesLeft={minutesLeft}
@@ -157,13 +157,13 @@ export default function CheckIn() {
 
         <div className="glass-card overflow-hidden">
           {/* Header */}
-          <div className="bg-electric-600 p-6 text-center text-foreground">
+          <div className="bg-electric-600 p-4 sm:p-6 text-center text-foreground">
             <h2 className="text-2xl font-bold mb-1">{booking.lab.name}</h2>
             <p className="text-blue-100 text-sm">{roomLabel}</p>
             <p className="text-blue-200 text-xs mt-1">{dateStr} at {timeStr}</p>
           </div>
 
-          <div className="p-8 flex flex-col items-center text-center">
+          <div className="p-6 sm:p-8 flex flex-col items-center text-center">
 
             {status === 'waiting' && (
               <>

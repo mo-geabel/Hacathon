@@ -44,12 +44,12 @@ export default function Login() {
       <div className="hidden lg:flex lg:w-1/2 relative bg-background border-r border-slate-200 dark:border-white/5">
         <div className="absolute inset-0 bg-background/60 mix-blend-multiply z-10" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#0d1829] via-[#0d1829]/60 to-transparent z-10" />
-        <img 
-          src="/academic-bg.png" 
-          alt="Campus Library" 
+        <img
+          src="/academic-bg.png"
+          alt="Campus Library"
           className="absolute inset-0 w-full h-full object-cover"
         />
-        
+
         <div className="relative z-20 flex flex-col justify-end p-16 h-full text-white max-w-2xl">
           <div className="flex items-center gap-4 mb-8">
             <div className="w-14 h-14 rounded-2xl bg-electric-500/20 flex items-center justify-center border border-electric-500/30 backdrop-blur-sm">
@@ -83,7 +83,7 @@ export default function Login() {
 
         <div className="w-full max-w-md mx-auto relative z-10">
           <div className="lg:hidden flex items-center gap-3 mb-10">
-             <div className="w-12 h-12 rounded-xl bg-electric-500/20 flex items-center justify-center border border-electric-500/30">
+            <div className="w-12 h-12 rounded-xl bg-electric-500/20 flex items-center justify-center border border-electric-500/30">
               <Library className="w-6 h-6 text-electric-400" />
             </div>
             <div>
@@ -161,11 +161,7 @@ export default function Login() {
                   </label>
                 </div>
 
-                <div className="text-sm">
-                  <a href="#" className="font-medium text-slate-500 dark:text-gray-400 hover:text-electric-400 transition-colors">
-                    Forgot password?
-                  </a>
-                </div>
+
               </div>
 
               <div className="pt-2">
@@ -187,7 +183,7 @@ export default function Login() {
               </div>
             </form>
           </div>
-          
+
           <div className="mt-8 text-center">
             <p className="text-xs text-slate-400 dark:text-gray-500">
               By logging in, you agree to the University's Acceptable Use Policy.

@@ -41,6 +41,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         name: backendUser.fullName,
         email: backendUser.email,
         role: backendUser.role,
+        eventRating: backendUser.eventRating,
       };
       
       setUser(mappedUser);

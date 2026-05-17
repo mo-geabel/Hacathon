@@ -10,6 +10,7 @@ export interface Room {
   lng?: number;
   facultyName?: string;
   facultyId?: string;
+  bookings?: Booking[];
 }
 
 export interface CampusEvent {
@@ -33,8 +34,10 @@ export interface Booking {
   date: string; // YYYY-MM-DD
   time: string; // HH:mm
   endTime?: string; // HH:mm
+  scheduledStart?: string; // ISO string from backend
+  scheduledEnd?: string; // ISO string from backend
   duration: number; // in minutes
-  status: 'pending' | 'approved' | 'rejected' | 'active' | 'completed' | 'released';
+  status: 'pending' | 'approved' | 'rejected' | 'active' | 'completed' | 'ghosted' | 'cancelled';
   title?: string;
   description?: string;
   expectedAttendees?: number;
@@ -42,6 +45,13 @@ export interface Booking {
   lab?: Room;
   qrToken?: string;
   reliabilityScore: number; // 0-100
+  student?: {
+    id: string;
+    universityId: string;
+    fullName: string;
+    faculty: string;
+    programme?: string;
+  };
 }
 
 export interface User {
@@ -49,6 +59,7 @@ export interface User {
   name: string;
   email: string;
   role: 'student' | 'admin';
+  eventRating?: number;
 }
 
 export interface OccupancyEvent {
